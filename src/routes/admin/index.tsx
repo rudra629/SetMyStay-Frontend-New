@@ -57,10 +57,11 @@ import { UserProfilesTable } from '@/components/admin/user-profiles-table';
 import { loadSettings, saveSettings } from '@/lib/app-settings';
 
 // Default credentials sourced from environment variables with safe fallbacks
-const DEFAULT_ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'Bluechip@123';
-const DEFAULT_ADMIN_OTP = import.meta.env.VITE_ADMIN_OTP || '16082007';
-const DEFAULT_ADMIN_QUESTION = import.meta.env.VITE_ADMIN_QUESTION || 'Who are you?';
-const DEFAULT_ADMIN_ANSWER = import.meta.env.VITE_ADMIN_ANSWER || 'rohan kholi';
+// Admin sign-in is checked by the Django server; no passwords are stored in the website code.
+const DEFAULT_ADMIN_PASSWORD = '';
+const DEFAULT_ADMIN_OTP = '';
+const DEFAULT_ADMIN_QUESTION = '';
+const DEFAULT_ADMIN_ANSWER = '';
 const DEFAULT_ADMIN_EMAIL = 'setmystay02@gmail.com';
 const DEFAULT_ADMIN_PHONE = '++91 79771 69550';
 const DEFAULT_ADMIN_ADDRESS = 'Office no. 01, Neelsidhi Splendour, Sector 15, CBD Belapur, Navi Mumbai, Maharashtra 400614';
@@ -121,23 +122,25 @@ const PasswordChangeForm = ({ currentPassword, onSave, onClose }: { currentPassw
         setPasswords(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmitPasswordChange = (e: React.FormEvent) => {
+    const handleSubmitPasswordChange = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (passwords.current !== currentPassword) {
-            toast({ title: 'Error', description: 'Current password is not correct.', variant: 'destructive' });
-            return;
-        }
         if (passwords.newPass !== passwords.confirmPass) {
             toast({ title: 'Error', description: 'New passwords do not match.', variant: 'destructive' });
             return;
         }
-        if (passwords.newPass.length < 6) {
-            toast({ title: 'Error', description: 'New password must be at least 6 characters.', variant: 'destructive' });
+        if (passwords.newPass.length < 8) {
+            toast({ title: 'Error', description: 'New password must be at least 8 characters.', variant: 'destructive' });
             return;
         }
-        onSave(passwords.newPass);
-        toast({ title: 'Success!', description: 'Your password has been changed.' });
-        onClose();
+        try {
+            // Changes the real admin password on the server
+            await api.post('/auth/change-password/', { old_password: passwords.current, new_password: passwords.newPass });
+            toast({ title: 'Success!', description: 'Your password has been changed. Use it next time you sign in.' });
+            onClose();
+        } catch (err: any) {
+            const msg = err?.response?.data?.error || 'Could not change the password.';
+            toast({ title: 'Error', description: msg, variant: 'destructive' });
+        }
     };
 
     return (
@@ -1302,8 +1305,6 @@ function AdminDashboard() {
                                 <DropdownMenuLabel>Admin Account Security</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => setPasswordModalOpen(true)}>Change Password</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setPinModalOpen(true)}>Change PIN</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setSecurityQuestionModalOpen(true)}>Change Security Question</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                         <Button variant="outline" onClick={handleLogout}>

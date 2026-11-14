@@ -35,7 +35,21 @@ export function WelcomeProfileModal({ isLoggedIn }: { isLoggedIn: boolean }) {
       return setOpen(false);
     }
     setForm((f) => ({ ...f, name: localStorage.getItem("user_name") || "", email: localStorage.getItem("user_email") || "" }));
-    setOpen(true);
+    // Ask the server first: the profile may already be complete (e.g. after clearing browser data)
+    let cancelled = false;
+    api.get("/users/complete-profile/")
+      .then(({ data }) => {
+        if (cancelled) return;
+        if (data?.is_profile_complete) {
+          localStorage.setItem("is_profile_complete", "true");
+          setOpen(false);
+        } else {
+          setForm((f) => ({ ...f, name: data?.first_name || f.name, email: data?.email || f.email, phone: data?.phone_number || f.phone, address: data?.address || f.address }));
+          setOpen(true);
+        }
+      })
+      .catch(() => { if (!cancelled) setOpen(true); });
+    return () => { cancelled = true; };
   }, [isLoggedIn]);
 
   const handleDismiss = () => {
@@ -55,7 +69,12 @@ export function WelcomeProfileModal({ isLoggedIn }: { isLoggedIn: boolean }) {
     }
     setErrors({}); setSaving(true);
     try {
-      await api.put("/users/complete-profile/", { first_name: r.data.name, phone_number: r.data.phone, email: r.data.email, address: r.data.address, role: "SEEKER" }).catch(() => null);
+      try {
+        await api.put("/users/complete-profile/", { first_name: r.data.name, phone_number: r.data.phone, email: r.data.email, address: r.data.address, role: "SEEKER" });
+      } catch {
+        toast.error("Could not save your details. Please check your internet and try again.");
+        return;
+      }
       const key = accountKey();
       let done: string[] = [];
       try { done = JSON.parse(localStorage.getItem(DONE_KEY) || "[]"); } catch { /* ignore */ }

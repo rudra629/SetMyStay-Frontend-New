@@ -166,6 +166,17 @@ export const getProperties = async (): Promise<Listing[]> => {
   }
 };
 
+/** Fetch one listing again (e.g. right after unlocking, to receive the owner's contact details). */
+export const getPropertyById = async (id: string): Promise<Listing | null> => {
+  try {
+    const response = await api.get(`/properties/${id}/`);
+    return adaptPropertyToListing(response.data);
+  } catch (error) {
+    console.warn("Failed to refresh property:", error);
+    return null;
+  }
+};
+
 export const getAdminProperties = async (): Promise<Listing[]> => {
   try {
     const response = await api.get('/properties/?admin=true');

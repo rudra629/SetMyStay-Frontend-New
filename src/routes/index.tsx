@@ -18,7 +18,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { Listing, RoommateProfile, Page, ListingType, UnlockPlan, Bed, Advertisement, Coupon, Purchase, AnyListing, PricingData } from "@/lib/types";
 import { defaultPricing, dummyProperties, dummyRoommates } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { getProperties, getRoommates, toggleFavoriteProperty, getCoupons, getAdvertisements, createListing, listingToRoommateProfile, getMyPurchases, getMyPlan, unlockListingApi } from "@/lib/api";
+import { getProperties, getRoommates, toggleFavoriteProperty, getCoupons, getAdvertisements, createListing, listingToRoommateProfile, getMyPurchases, getMyPlan, unlockListingApi, getPropertyById } from "@/lib/api";
 import type { MyPlan } from "@/lib/api";
 
 import { Header } from "@/components/layout/header";
@@ -154,6 +154,26 @@ function Home() {
       return null;
     }
   }, [applyServerPlan]);
+
+  // After an unlock the server starts sending the owner's phone/address for that listing,
+  // so fetch the listing again and swap it in everywhere it is shown.
+  const refreshUnlockedItem = useCallback(async (id: string, type: 'listing' | 'roommate') => {
+    const fresh = await getPropertyById(String(id));
+    if (!fresh) return null;
+    const isRoommate = (fresh.propertyType as string)?.toLowerCase() === 'roommate';
+    if (isRoommate) {
+      const mate = listingToRoommateProfile(fresh);
+      const swap = (arr: RoommateProfile[]) => arr.map((r) => (String(r.id) === String(id) ? { ...r, ...mate } : r));
+      setAllRoommates(swap);
+      setFeaturedRoommates(swap);
+      return { type, data: mate as AnyListing };
+    }
+    const swap = (arr: Listing[]) => arr.map((l) => (String(l.id) === String(id) ? { ...l, ...fresh } : l));
+    setAllListings(swap);
+    setFeaturedProperties(swap);
+    setFeaturedPGs(swap);
+    return { type, data: fresh as AnyListing };
+  }, []);
 
   useEffect(() => {
     setIsClient(true);
@@ -465,6 +485,8 @@ function Home() {
       if (itemToUnlock?.data.id) {
         try {
           applyServerPlan(await unlockListingApi(String(itemToUnlock.data.id)));
+          const refreshed = await refreshUnlockedItem(String(itemToUnlock.data.id), itemToUnlock.type);
+          if (refreshed) setSelectedItem((cur) => (cur && String(cur.data.id) === String(itemToUnlock.data.id) ? refreshed : cur));
         } catch (e) {
           console.warn("Unlock after purchase failed:", e);
         }
@@ -527,7 +549,7 @@ function Home() {
             setRateUsModalOpen(true);
         }
     }, 400);
-  }, [toast, itemToUnlock, applyServerPlan, syncPlanFromServer]);
+  }, [toast, itemToUnlock, applyServerPlan, syncPlanFromServer, refreshUnlockedItem]);
 
   const handleViewDetails = (item: AnyListing, type: 'listing' | 'roommate') => {
     setSelectedItem({ type, data: item });
@@ -548,7 +570,8 @@ function Home() {
             : `You have ${plan.credits_left} unlock credit${plan.credits_left === 1 ? '' : 's'} remaining.`,
         });
       }
-      handleViewDetails(item.data, item.type);
+      const refreshed = await refreshUnlockedItem(String(item.data.id), item.type);
+      setSelectedItem(refreshed || { type: item.type, data: item.data });
     } catch (e: any) {
       if (e?.noCredits) {
         applyServerPlan(e.plan);
