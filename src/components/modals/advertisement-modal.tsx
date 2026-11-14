@@ -13,8 +13,7 @@ interface AdvertisementModalProps {
 
 export function AdvertisementModal({ isOpen, onClose, title, description, imageUrl }: AdvertisementModalProps) {
   const [copied, setCopied] = useState(false);
-  if (!isOpen) return null;
-  const code = description.match(/code:?\s*([A-Z0-9]{4,})/i)?.[1];
+  const code = description?.match(/code:?\s*([A-Z0-9]{4,})/i)?.[1];
   const text = code ? description.replace(/\s*Use code:?\s*[A-Z0-9]+\.?/i, "") : description;
 
   return (

@@ -42,6 +42,7 @@ import { PaymentConfirmationModal } from "@/components/modals/payment-confirmati
 import { SlotMachineModal } from "@/components/modals/slot-machine-modal";
 import { ContactFab } from "@/components/shared/contact-fab";
 import { HistoryModal } from "@/components/modals/history-modal";
+import { PolicyModal, type PolicyTab } from "@/components/modals/policy-modal";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { getFromLocalStorage, saveToLocalStorage } from "@/lib/storage";
 
@@ -89,6 +90,7 @@ function Home() {
   const [pricing, setPricing] = useState<PricingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [featuredProperties, setFeaturedProperties] = useState<Listing[]>([]);
+  const [featuredPGs, setFeaturedPGs] = useState<Listing[]>([]);
   const [featuredRoommates, setFeaturedRoommates] = useState<RoommateProfile[]>([]);
   const [isClient, setIsClient] = useState(false);
 
@@ -122,6 +124,8 @@ function Home() {
   const [paymentDetails, setPaymentDetails] = useState<{ planName: string; amount: number; onConfirm: () => void; } | null>(null);
 
   const [isSlotMachineModalOpen, setIsSlotMachineModalOpen] = useState(false);
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
+  const [policyModalTab, setPolicyModalTab] = useState<PolicyTab>('refund');
   const [isUnlockConfirmationOpen, setUnlockConfirmationOpen] = useState(false);
   const [activeCoupons, setActiveCoupons] = useState<Coupon[]>([]);
 
@@ -161,9 +165,20 @@ function Home() {
           setAllListings(realProperties.length > 0 ? realProperties : dummyProperties);
           setAllRoommates(realRoommates);
 
-          const shuffledListings = [...(realProperties.length > 0 ? realProperties : dummyProperties)].sort(() => 0.5 - Math.random());
+          const realRentals = realProperties.filter(p => (p.propertyType as string)?.toLowerCase() === 'rental');
+          const fallbackRentals = dummyProperties.filter(p => (p.propertyType as string)?.toLowerCase() === 'rental');
+          const rentalsToUse = realRentals.length > 0 ? realRentals : fallbackRentals;
+
+          const realPGs = realProperties.filter(p => (p.propertyType as string)?.toLowerCase() === 'pg');
+          const fallbackPGs = dummyProperties.filter(p => (p.propertyType as string)?.toLowerCase() === 'pg');
+          const pgsToUse = realPGs.length > 0 ? realPGs : fallbackPGs;
+
+          const shuffledRentals = [...rentalsToUse].sort(() => 0.5 - Math.random());
+          const shuffledPGs = [...pgsToUse].sort(() => 0.5 - Math.random());
           const shuffledRoommates = [...realRoommates].sort(() => 0.5 - Math.random());
-          setFeaturedProperties(shuffledListings.slice(0, 3));
+
+          setFeaturedProperties(shuffledRentals.slice(0, 3));
+          setFeaturedPGs(shuffledPGs.slice(0, 3));
 
           const withProp = shuffledRoommates.filter(r => r.hasProperty);
           setFeaturedRoommates(withProp.length > 0 ? withProp.slice(0, 6) : shuffledRoommates.slice(0, 6));
@@ -743,6 +758,11 @@ function Home() {
     }
   };
 
+  const handleOpenPolicy = (tab: PolicyTab) => {
+    setPolicyModalTab(tab);
+    setIsPolicyModalOpen(true);
+  };
+
   if (isLoading || !isClient) {
     return (
       <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
@@ -795,6 +815,7 @@ function Home() {
         {activePage === 'home' && (
           <HomeSection 
             featuredProperties={featuredProperties} 
+            featuredPGs={featuredPGs}
             featuredRoommates={featuredRoommates} 
             allRoommates={allRoommates}
             onViewDetails={handleViewDetails}
@@ -823,7 +844,7 @@ function Home() {
         )}
       </main>
 
-      <Footer onNavigate={handleNavigate} />
+      <Footer onNavigate={handleNavigate} onOpenPolicy={handleOpenPolicy} />
       <FloatingCta onGameClick={handleGameClick} />
       <ContactFab />
       
@@ -946,6 +967,11 @@ function Home() {
         onClose={() => setIsSlotMachineModalOpen(false)}
         prizes={activeCoupons.filter(c => c.isActive)}
         onWin={handleCouponWin}
+      />
+      <PolicyModal
+        isOpen={isPolicyModalOpen}
+        onClose={() => setIsPolicyModalOpen(false)}
+        defaultTab={policyModalTab}
       />
     </div>
   );

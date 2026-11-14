@@ -19,9 +19,10 @@ const DEFAULT_ADMIN_ADDRESS = 'Office no. 01, Neelsidhi Splendour, Sector 15, CB
 
 interface FooterProps {
   onNavigate: (page: Page) => void;
+  onOpenPolicy?: (tab: 'privacy' | 'terms' | 'refund') => void;
 }
 
-export function Footer({ onNavigate }: FooterProps) {
+export function Footer({ onNavigate, onOpenPolicy }: FooterProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [contactEmail, setContactEmail] = useState(DEFAULT_ADMIN_EMAIL);
   const [contactPhone, setContactPhone] = useState(DEFAULT_ADMIN_PHONE);
@@ -40,7 +41,7 @@ export function Footer({ onNavigate }: FooterProps) {
     <footer className="bg-ink text-ink-foreground/70">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
         <p className="mb-12 font-display text-4xl font-semibold text-ink-foreground">SetMyStay</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
 
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
@@ -69,10 +70,40 @@ export function Footer({ onNavigate }: FooterProps) {
           <div>
             <h3 className="font-semibold text-ink-foreground mb-4">Quick Links</h3>
             <ul className="space-y-2 text-sm">
-              <li><button onClick={() => onNavigate('home')} className="hover:text-ink-foreground text-left w-full">Home</button></li>
-              <li><a href="https://g.co/kgs/Mmk6x3N" target="_blank" rel="noopener noreferrer" className="hover:text-ink-foreground">Visit Our Office</a></li>
-              <li><Link to="/admin/login" className="hover:text-ink-foreground">Admin Dashboard</Link></li>
-              <li><Link to="/staff/login" className="hover:text-ink-foreground">Staff Dashboard</Link></li>
+              <li><button onClick={() => onNavigate('home')} className="hover:text-ink-foreground text-left w-full transition-colors">Home</button></li>
+              <li><a href="https://g.co/kgs/Mmk6x3N" target="_blank" rel="noopener noreferrer" className="hover:text-ink-foreground transition-colors">Visit Our Office</a></li>
+              <li><Link to="/admin/login" className="hover:text-ink-foreground transition-colors">Admin Dashboard</Link></li>
+              <li><Link to="/staff/login" className="hover:text-ink-foreground transition-colors">Staff Dashboard</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-ink-foreground mb-4">Legal & Policies</h3>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <button 
+                  onClick={() => onOpenPolicy?.('refund')} 
+                  className="hover:text-ink-foreground text-left w-full transition-colors"
+                >
+                  Refund & Cancellation Policy
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => onOpenPolicy?.('privacy')} 
+                  className="hover:text-ink-foreground text-left w-full transition-colors"
+                >
+                  Privacy Policy
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => onOpenPolicy?.('terms')} 
+                  className="hover:text-ink-foreground text-left w-full transition-colors"
+                >
+                  Terms & Conditions
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -80,12 +111,12 @@ export function Footer({ onNavigate }: FooterProps) {
             <h3 className="font-semibold text-ink-foreground mb-4">Contact</h3>
             <div className="space-y-2 text-sm">
               <p>{contactAddress}</p>
-              <a href={`mailto:${contactEmail}`} className="flex items-center gap-2 hover:text-ink-foreground">
-                <Mail className="w-4 h-4" />
-                <span>{contactEmail}</span>
+              <a href={`mailto:${contactEmail}`} className="flex items-center gap-2 hover:text-ink-foreground transition-colors">
+                <Mail className="w-4 h-4 shrink-0" />
+                <span className="break-all">{contactEmail}</span>
               </a>
-              <a href={`tel:${contactPhone}`} className="flex items-center gap-2 hover:text-ink-foreground">
-                <Phone className="w-4 h-4" />
+              <a href={`tel:${contactPhone}`} className="flex items-center gap-2 hover:text-ink-foreground transition-colors">
+                <Phone className="w-4 h-4 shrink-0" />
                 <span>{contactPhone}</span>
               </a>
             </div>
@@ -95,6 +126,13 @@ export function Footer({ onNavigate }: FooterProps) {
 
         <div className="mt-12 border-t border-ink-foreground/10 pt-8 text-center text-sm">
           {isMounted && <p>&copy; {new Date().getFullYear()} SetMyStay. All rights reserved.</p>}
+          <div className="flex flex-wrap justify-center gap-3 text-xs text-ink-foreground/60 mt-3">
+            <button onClick={() => onOpenPolicy?.('refund')} className="hover:underline">Refund Policy</button>
+            <span>•</span>
+            <button onClick={() => onOpenPolicy?.('privacy')} className="hover:underline">Privacy Policy</button>
+            <span>•</span>
+            <button onClick={() => onOpenPolicy?.('terms')} className="hover:underline">Terms & Conditions</button>
+          </div>
           <p className="text-xs text-ink-foreground/50 mt-2">Developed & Designed by Kelvora</p>
         </div>
       </div>

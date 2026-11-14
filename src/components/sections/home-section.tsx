@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import heroVideoUrl from "@/assets/hero-building.mp4";
 interface HomeSectionProps {
   featuredProperties: Listing[];
+  featuredPGs?: Listing[];
   featuredRoommates: RoommateProfile[];
   allRoommates?: RoommateProfile[];
   onViewDetails: (item: Listing | RoommateProfile, type: "listing" | "roommate") => void;
@@ -37,6 +38,7 @@ const steps = [
 
 export function HomeSection({ 
   featuredProperties, 
+  featuredPGs = [],
   featuredRoommates, 
   allRoommates = [],
   onViewDetails, 
@@ -141,12 +143,21 @@ export function HomeSection({
         </div>
       </section>
 
-      {/* FEATURED */}
+      {/* FEATURED RENTALS */}
       {featuredProperties.length > 0 && (
         <FeaturedRail title="Featured homes" items={featuredProperties} render={(l) => (
           <PropertyCard listing={l} onViewDetails={(i) => onViewDetails(i, "listing")} isLiked={likedItemIds.has(l.id)} onToggleLike={() => onToggleLike(l.id)} isUnlocked={unlockedIds.has(l.id)} />
         )} onAll={() => onNavigate("rentals")} />
       )}
+
+      {/* DEDICATED PG SECTION */}
+      {featuredPGs.length > 0 && (
+        <FeaturedRail title="Co-Living & PGs" items={featuredPGs} render={(l) => (
+          <PropertyCard listing={l} onViewDetails={(i) => onViewDetails(i, "listing")} isLiked={likedItemIds.has(l.id)} onToggleLike={() => onToggleLike(l.id)} isUnlocked={unlockedIds.has(l.id)} />
+        )} onAll={() => onNavigate("pg")} />
+      )}
+
+      {/* ROOMMATES */}
       {featuredRoommates.length > 0 && (
         <FeaturedRail title="Roommates near you" items={featuredRoommates} render={(r) => (
           <RoommateCard profile={r} onViewDetails={(i) => onViewDetails(i, "roommate")} isLiked={likedItemIds.has(r.id)} onToggleLike={() => onToggleLike(r.id)} isUnlocked={unlockedIds.has(r.id)} />
