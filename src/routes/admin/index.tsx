@@ -1045,8 +1045,21 @@ function AdminDashboard() {
     };
 
     const handleLogout = () => {
+        // Remove the admin's login completely (the remembered-device mark stays, if it was ticked)
         localStorage.removeItem('admin_authenticated');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         navigate({ to: '/admin/login', replace: true });
+    };
+
+    const handleForgetDevices = async () => {
+        try {
+            const { data } = await api.post('/auth/admin/forget-devices/');
+            localStorage.removeItem('setmystay_admin_device');
+            toast({ title: 'Devices forgotten', description: `${data?.removed ?? 0} remembered device(s) will need the email code again.` });
+        } catch {
+            toast({ title: 'Error', description: 'Could not reach the server.', variant: 'destructive' });
+        }
     };
 
     const pendingListings = useMemo(() => {
@@ -1318,6 +1331,7 @@ function AdminDashboard() {
                                 <DropdownMenuLabel>Admin Account Security</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => setPasswordModalOpen(true)}>Change Password</DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleForgetDevices}>Forget all remembered devices</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                         <Button variant="outline" onClick={handleLogout}>
