@@ -1,6 +1,6 @@
 import type { Listing } from "@/lib/types";
 import { MapPin, Home, BedDouble, Heart, ArrowUpRight, CheckCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, isVideoUrl, getFirstImageUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 interface PropertyCardProps {
@@ -12,13 +12,21 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ listing, onViewDetails, isLiked, onToggleLike, isUnlocked }: PropertyCardProps) {
-  const img = listing.images?.[0];
+  const img = getFirstImageUrl(listing.images);
+  const isVideo = isVideoUrl(img);
   return (
     <div onClick={() => onViewDetails(listing)}
       className="property-theme group flex h-full cursor-pointer flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
       <div className="relative aspect-[4/3] overflow-hidden">
-        {img ? <img src={img} alt={listing.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-110" />
-          : <div className="grid h-full place-items-center bg-muted"><Home className="h-10 w-10 text-muted-foreground" /></div>}
+        {img ? (
+          isVideo ? (
+            <video src={img} muted playsInline autoPlay={false} className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-110" />
+          ) : (
+            <img src={img} alt={listing.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-110" />
+          )
+        ) : (
+          <div className="grid h-full place-items-center bg-muted"><Home className="h-10 w-10 text-muted-foreground" /></div>
+        )}
         <div className="absolute inset-0 bg-ink-fade opacity-0 transition-opacity duration-500 group-hover:opacity-60" />
         <span className="absolute left-4 top-4 glass inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-ink-foreground">
           {listing.propertyType === "PG" ? <BedDouble className="h-3 w-3" /> : <Home className="h-3 w-3" />}{listing.propertyType}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { RoommateProfile } from "@/lib/types";
 import { MapPin, IndianRupee, Eye, User, Briefcase, Heart, CheckCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, isVideoUrl, getFirstImageUrl } from "@/lib/utils";
 
 interface RoommateCardProps {
   profile: RoommateProfile;
@@ -23,6 +23,8 @@ export function RoommateCard({ profile, onViewDetails, isLiked, onToggleLike, is
   };
   
   const images = profile.images || [];
+  const displayMedia = getFirstImageUrl(images);
+  const isVideo = isVideoUrl(displayMedia);
 
   return (
     <div 
@@ -30,11 +32,21 @@ export function RoommateCard({ profile, onViewDetails, isLiked, onToggleLike, is
       onClick={() => onViewDetails(profile)}
     >
       <div className="relative h-48 w-full flex-shrink-0">
-        {images.length > 0 ? (
-          <img
-            src={images[0]}
-            alt={profile.ownerName} className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
+        {displayMedia ? (
+          isVideo ? (
+            <video
+              src={displayMedia}
+              muted
+              playsInline
+              autoPlay={false}
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <img
+              src={displayMedia}
+              alt={profile.ownerName} className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          )
         ) : (
            <div className="w-full h-full bg-muted flex items-center justify-center">
             <User className="w-10 h-10 text-muted-foreground" />

@@ -31,11 +31,7 @@ const steps = [
   { icon: ShieldCheck, title: "Unlock", text: "Get owner contact details instantly with a simple plan." },
   { icon: KeyRound, title: "Move in", text: "Visit, connect directly, and get your keys — no brokers." },
 ];
-<<<<<<< Updated upstream
-=======
 
-const cities = ["Navi Mumbai", "Mumbai", "Pune", "Bengaluru", "Hyderabad", "Delhi NCR", "Thane", "Chennai"];
->>>>>>> Stashed changes
 
 export function HomeSection({ featuredProperties, featuredRoommates, onViewDetails, onNavigate, likedItemIds, onToggleLike, unlockedIds }: HomeSectionProps) {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -56,12 +52,6 @@ export function HomeSection({ featuredProperties, featuredRoommates, onViewDetai
 
   return (
     <div>
-<<<<<<< Updated upstream
-      {/* HERO */}
-      <section ref={heroRef} className="relative h-[90svh] min-h-[620px] overflow-hidden bg-ink">
-        <motion.video ref={videoRef} controls={false} disablePictureInPicture disableRemotePlayback style={lite ? undefined : { scale: videoScale }} autoPlay loop muted playsInline preload="auto"
-          className="hero-video pointer-events-none absolute inset-0 h-full w-full object-cover" src={heroVideo.url} />
-=======
         <section ref={heroRef} className="relative h-[90svh] min-h-[620px] overflow-hidden bg-ink">
         <motion.video 
           style={lite ? undefined : { scale: videoScale }} 
@@ -73,7 +63,6 @@ export function HomeSection({ featuredProperties, featuredRoommates, onViewDetai
           className="absolute inset-0 h-full w-full object-cover" 
           src={heroVideoUrl} 
         />
->>>>>>> Stashed changes
         <div className="absolute inset-0 bg-ink-fade" />
         <motion.div style={lite ? undefined : { y: contentY, opacity: contentOpacity }}
           className="container relative z-10 flex h-full flex-col justify-end pb-20 sm:pb-24 text-ink-foreground">

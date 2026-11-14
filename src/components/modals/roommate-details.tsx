@@ -6,6 +6,7 @@ import { DetailsModalWrapper } from './details-modal-wrapper';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, IndianRupee, User, Eye, Cake, ChevronLeft, ChevronRight, Lock, MessageSquare, Phone, Sparkles, CigaretteOff, Leaf, Drumstick, Utensils, PawPrint } from 'lucide-react';
+import { isVideoUrl } from '@/lib/utils';
 
 interface RoommateDetailsProps {
   profile: RoommateProfile | null;
@@ -26,7 +27,7 @@ const preferenceIcons: { [key: string]: React.ReactNode } = {
 
 const MediaGallery = ({ profile }: { profile: RoommateProfile }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
-    const media = profile.images || [];
+    const media = Array.from(new Set([...(profile.images || []), ...(profile.videoUrl ? [profile.videoUrl] : [])]));
   
     const nextMedia = () => setCurrentIndex((prev) => (prev + 1) % media.length);
     const prevMedia = () => setCurrentIndex((prev) => (prev - 1 + media.length) % media.length);
@@ -47,8 +48,8 @@ const MediaGallery = ({ profile }: { profile: RoommateProfile }) => {
             className={`absolute inset-0 transition-opacity duration-300 ${index === currentIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           >
             {/* Cloud Video Support */}
-            {src.match(/\.(mp4|webm|ogg|mov|mkv|m4v)/i) ? (
-                 <video src={src as string} controls controlsList="nodownload" className="w-full h-full object-contain bg-black" />
+            {isVideoUrl(src) ? (
+                 <video src={src as string} controls playsInline controlsList="nodownload" className="w-full h-full object-contain bg-black" />
              ) : (
                 <img src={src as string} alt={`${profile.ownerName} media ${index + 1}`} className="absolute inset-0 h-full w-full object-cover" />
              )}

@@ -14,6 +14,7 @@ import { PropertyCard } from "@/components/shared/property-card";
 import { RoommateCard } from "@/components/shared/roommate-card";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AutocompleteInput } from '@/components/shared/autocomplete-input';
+import { SearchableSelect } from '@/components/shared/searchable-select';
 import { indianStates } from '@/lib/states';
 import { allIndianCities, indianCitiesByState, City } from '@/lib/cities';
 import { indianAreas } from '@/lib/areas';
@@ -98,19 +99,27 @@ const FilterPanel = ({
     
     {/* Common Geographic Filters */}
     <div className="space-y-4">
-        <AutocompleteInput 
-          placeholder="Enter State"
+        <SearchableSelect 
+          placeholder="Filter by State"
+          searchPlaceholder="Search State..."
+          emptyText="No state found."
           value={filters.state}
-          onChange={(val) => handleFilterChange('state', val)}
-          suggestions={indianStates}
+          onChange={(val) => {
+            handleFilterChange('state', val);
+            handleFilterChange('city', '');
+          }}
+          options={["All States", ...indianStates]}
+        />
+        <SearchableSelect 
+          placeholder="Filter by City"
+          searchPlaceholder="Search City..."
+          emptyText="No city found."
+          value={filters.city}
+          onChange={(val) => handleFilterChange('city', val === "All Cities" ? "" : val)}
+          options={["All Cities", ...citySuggestions]}
+          disabled={!filters.state || filters.state === "All States"}
         />
         <AutocompleteInput 
-          placeholder="Enter City"
-          value={filters.city}
-          onChange={(val) => handleFilterChange('city', val)}
-          suggestions={citySuggestions}
-        />
-        <AutocompleteInput
           placeholder="Enter Area / Locality"
           value={filters.locality}
           onChange={(val) => handleFilterChange('locality', val)}

@@ -44,10 +44,16 @@ export function HistoryModal({ isOpen, onClose, purchases = [] }: HistoryModalPr
         // Deduplicate by id
         const unique = Array.from(new Map(merged.map((p) => [p.id || `${p.plan}-${p.date}`, p])).values());
         setAllPurchases(unique);
+        try {
+          localStorage.setItem("setmystay_purchase_history", JSON.stringify(unique));
+        } catch {}
       })
       .catch(() => {
         const unique = Array.from(new Map(combinedLocal.map((p) => [p.id || `${p.plan}-${p.date}`, p])).values());
         setAllPurchases(unique);
+        try {
+          localStorage.setItem("setmystay_purchase_history", JSON.stringify(unique));
+        } catch {}
       });
   }, [isOpen, purchases]);
 

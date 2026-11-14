@@ -78,8 +78,8 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
         });
 
         const options = {
-          // Uses the key returned by Django first, falling back to Next.js env variable
-          key: data.razorpay_key || import.meta.env.VITE_RAZORPAY_KEY_ID,
+          // Uses the key returned by Django first, falling back to environment variables
+          key: data.razorpay_key || data.key || data.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || (import.meta.env as any).NEXT_PUBLIC_RAZORPAY_KEY_ID,
           amount: data.amount,
           currency: data.currency,
           name: 'SetMyStay',

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform } from "motion/react";
 import { Heart, X, RotateCcw, MapPin, Info, Sparkles } from "lucide-react";
 import type { AnyListing, Listing, RoommateProfile } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, isVideoUrl, getFirstImageUrl } from "@/lib/utils";
 import { recordSwipe, swipesLeft } from "@/lib/app-settings";
 
 interface SwipeDeckProps {
@@ -117,7 +117,8 @@ function SwipeCard({ item, depth, trigger, onSwiped, onInfo }: { item: AnyListin
 
   const roommate = isRoommate(item);
   const title = roommate ? item.ownerName : (item as Listing).title;
-  const img = item.images?.[0];
+  const img = getFirstImageUrl(item.images);
+  const isVideo = isVideoUrl(img);
   const tags = roommate ? item.preferences?.slice(0, 3) ?? [] : [(item as Listing).size, (item as Listing).furnishedStatus].filter(Boolean);
 
   return (
@@ -137,7 +138,13 @@ function SwipeCard({ item, depth, trigger, onSwiped, onInfo }: { item: AnyListin
       }}
     >
       <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-ink shadow-luxe">
-        {img ? <img src={img} alt={title} draggable={false} className="absolute inset-0 h-full w-full object-cover" /> : <div className="absolute inset-0 bg-brass opacity-60" />}
+        {img ? (
+          isVideo ? (
+            <video src={img} muted playsInline autoPlay={false} className="absolute inset-0 h-full w-full object-cover" />
+          ) : (
+            <img src={img} alt={title} draggable={false} className="absolute inset-0 h-full w-full object-cover" />
+          )
+        ) : <div className="absolute inset-0 bg-brass opacity-60" />}
         <div className="absolute inset-0 bg-ink-fade" />
         <motion.div style={{ opacity: likeOpacity }} className="absolute left-6 top-8 -rotate-12 rounded-xl border-4 border-success px-4 py-1 font-display text-3xl font-bold tracking-widest text-success">LIKE</motion.div>
         <motion.div style={{ opacity: nopeOpacity }} className="absolute right-6 top-8 rotate-12 rounded-xl border-4 border-destructive px-4 py-1 font-display text-3xl font-bold tracking-widest text-destructive">NOPE</motion.div>

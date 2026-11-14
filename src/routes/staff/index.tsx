@@ -31,8 +31,9 @@ import { format } from 'date-fns';
 import { UserProfilesTable } from '@/components/admin/user-profiles-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Listing, RoommateProfile, AnyListing } from '@/lib/types';
+import { isVideoUrl } from '@/lib/utils';
 
-import { getAdminProperties, updatePropertyStatus, updateRoommateStatus, deleteProperty, deleteRoommate } from '@/lib/api';
+import { getAdminProperties, updatePropertyStatus, updateRoommateStatus, deleteProperty, deleteRoommate, listingToRoommateProfile } from '@/lib/api';
 
 function StaffDashboard() {
     const navigate = useNavigate();
@@ -59,28 +60,7 @@ function StaffDashboard() {
             const realProperties = allData.filter((p: any) => p.propertyType !== 'Roommate');
             const rawRoommates = allData.filter((p: any) => p.propertyType === 'Roommate');
 
-            const realRoommates: RoommateProfile[] = rawRoommates.map((listing: any) => ({
-                id: listing.id,
-                propertyType: 'Roommate',
-                ownerName: listing.title,
-                age: 25, 
-                rent: listing.rent,
-                city: listing.city,
-                locality: listing.locality,
-                state: listing.state,
-                completeAddress: listing.completeAddress,
-                partialAddress: listing.partialAddress,
-                contactPhonePrimary: listing.contactPhonePrimary,
-                description: listing.description || `Looking for roommate in ${listing.locality}`,
-                preferences: listing.amenities || [], 
-                gender: 'Any', 
-                images: listing.images?.length ? listing.images : ['https://placehold.co/400x400'],
-                views: listing.views,
-                ownerId: listing.ownerId,
-                hasProperty: true, 
-                status: listing.status as any,
-                submittedAt: listing.submittedAt
-            }));
+            const realRoommates: RoommateProfile[] = rawRoommates.map(listingToRoommateProfile);
 
             setProperties(realProperties);
             setRoommates(realRoommates);
@@ -295,62 +275,69 @@ function StaffDashboard() {
                     {currentItem && (
                         <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
                              {Array.isArray(currentItem.images) && currentItem.images.length > 0 && (
-                                <div className="relative w-full h-64 bg-slate-200 rounded-lg overflow-hidden">
-                                     {currentItem.images[currentMediaIndex]?.match(/\.(mp4|webm|ogg|mov|mkv|m4v)/i) ? (
-                                            <video 
-                                                src={currentItem.images[currentMediaIndex]} 
-                                                controls 
-                                                controlsList="nodownload"
-                                                className="w-full h-full object-contain bg-black"
-                                            />
-                                        ) : (
-                                            <img 
-                                                src={currentItem.images[currentMediaIndex]} 
-                                                alt="Listing Media" sizes="(max-width: 768px) 100vw, 800px"
-                                                style={{ objectFit: 'contain' }}
-                                                className="absolute inset-0 h-full w-full object-contain p-2"
-                                            />
-                                        )}
+                                <div className="relative w-full h-64 bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center">
+                                     {isVideoUrl(currentItem.images[currentMediaIndex]) ? (
+                                        <video 
+                                            key={currentItem.images[currentMediaIndex]}
+                                            src={currentItem.images[currentMediaIndex]} 
+                                            controls 
+                                            playsInline
+                                            className="w-full h-full object-contain"
+                                        />
+                                     ) : (
+                                        <img 
+                                            src={currentItem.images[currentMediaIndex]} 
+                                            alt="Listing Media" 
+                                            className="absolute inset-0 h-full w-full object-contain p-2"
+                                        />
+                                     )}
                                      {currentItem.images.length > 1 && (
                                          <>
-                                            <Button size="icon" variant="ghost" className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50" onClick={() => setCurrentMediaIndex(i => Math.max(0, i-1))} disabled={currentMediaIndex === 0}><ChevronLeft /></Button>
-                                            <Button size="icon" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50" onClick={() => setCurrentMediaIndex(i => Math.min(currentItem.images.length - 1, i+1))} disabled={currentMediaIndex === currentItem.images.length - 1}><ChevronRight /></Button>
+                                            <Button size="icon" variant="ghost" className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/40 hover:bg-black/60 z-10" onClick={() => setCurrentMediaIndex(i => Math.max(0, i-1))} disabled={currentMediaIndex === 0}><ChevronLeft /></Button>
+                                            <Button size="icon" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/40 hover:bg-black/60 z-10" onClick={() => setCurrentMediaIndex(i => Math.min(currentItem.images.length - 1, i+1))} disabled={currentMediaIndex === currentItem.images.length - 1}><ChevronRight /></Button>
                                          </>
                                      )}
                                 </div>
                             )}
 
-                            {('aadhaarCardUrl' in currentItem || 'electricityBillUrl' in currentItem || 'nocUrl' in currentItem) && (
+                            {Boolean(
+                                currentItem.aadhaarCardUrl || 
+                                currentItem.electricityBillUrl || 
+                                currentItem.nocUrl ||
+                                (currentItem as any).document_aadhaar ||
+                                (currentItem as any).document_electricity ||
+                                (currentItem as any).document_noc
+                            ) && (
                                 <div className="border rounded-lg p-4 bg-blue-50">
                                     <h4 className="font-semibold text-base mb-3 flex items-center gap-2">
                                         <FileCheck className="w-5 h-5 text-blue-700" />
                                         Verification Documents
                                     </h4>
                                     <div className="flex flex-wrap gap-4">
-                                        {'aadhaarCardUrl' in currentItem && currentItem.aadhaarCardUrl && (
+                                        {(currentItem.aadhaarCardUrl || (currentItem as any).document_aadhaar) && (
                                             <div className="flex flex-col items-center gap-2">
                                                 <FileText className="w-8 h-8 text-blue-600"/>
                                                 <p className="text-sm font-medium">Aadhaar Card</p>
                                                 <Button asChild variant="outline" size="sm">
-                                                    <a href={currentItem.aadhaarCardUrl} target="_blank" rel="noopener noreferrer">View</a>
+                                                    <a href={currentItem.aadhaarCardUrl || (currentItem as any).document_aadhaar} target="_blank" rel="noopener noreferrer">View</a>
                                                 </Button>
                                             </div>
                                         )}
-                                        {'electricityBillUrl' in currentItem && currentItem.electricityBillUrl && (
+                                        {(currentItem.electricityBillUrl || (currentItem as any).document_electricity) && (
                                             <div className="flex flex-col items-center gap-2">
                                                 <FileText className="w-8 h-8 text-blue-600"/>
                                                 <p className="text-sm font-medium">Electricity Bill</p>
                                                 <Button asChild variant="outline" size="sm">
-                                                    <a href={currentItem.electricityBillUrl} target="_blank" rel="noopener noreferrer">View</a>
+                                                    <a href={currentItem.electricityBillUrl || (currentItem as any).document_electricity} target="_blank" rel="noopener noreferrer">View</a>
                                                 </Button>
                                             </div>
                                         )}
-                                        {'nocUrl' in currentItem && currentItem.nocUrl && (
+                                        {(currentItem.nocUrl || (currentItem as any).document_noc) && (
                                             <div className="flex flex-col items-center gap-2">
                                                 <FileText className="w-8 h-8 text-blue-600"/>
                                                 <p className="text-sm font-medium">NOC</p>
                                                 <Button asChild variant="outline" size="sm">
-                                                    <a href={currentItem.nocUrl} target="_blank" rel="noopener noreferrer">View</a>
+                                                    <a href={currentItem.nocUrl || (currentItem as any).document_noc} target="_blank" rel="noopener noreferrer">View</a>
                                                 </Button>
                                             </div>
                                         )}

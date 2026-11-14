@@ -25,7 +25,8 @@ import {
     getCoupons, createCoupon, updateCoupon, deleteCoupon,
     getAdvertisements, createAdvertisement, updateAdvertisement, deleteAdvertisement,
     getStaff, createStaff, updateStaff, deleteStaff,
-    getAllPurchasesAdmin // 👈 Added the new API call
+    getAllPurchasesAdmin, // 👈 Added the new API call
+    listingToRoommateProfile
 } from '@/lib/api'; // Or '@/lib/apis' depending on your file name
 
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getProperties } from '@/lib/api';
+import api, { getProperties } from '@/lib/api';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/icons';
@@ -48,18 +49,18 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, startOfWeek, addDays, getWeek, formatDistanceToNow, differenceInHours } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, isVideoUrl } from '@/lib/utils';
 import { getFromLocalStorage, saveToLocalStorage } from '@/lib/storage';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ThemeCustomizer, DemoDataCard } from '@/components/admin/theme-customizer';
 import { UserProfilesTable } from '@/components/admin/user-profiles-table';
 import { loadSettings, saveSettings } from '@/lib/app-settings';
 
-// Default credentials for the very first run
-const DEFAULT_ADMIN_PASSWORD = 'Bluechip@123';
-const DEFAULT_ADMIN_OTP = '16082007';
-const DEFAULT_ADMIN_QUESTION = 'Who are you?';
-const DEFAULT_ADMIN_ANSWER = 'rohan kholi';
+// Default credentials sourced from environment variables with safe fallbacks
+const DEFAULT_ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'Bluechip@123';
+const DEFAULT_ADMIN_OTP = import.meta.env.VITE_ADMIN_OTP || '16082007';
+const DEFAULT_ADMIN_QUESTION = import.meta.env.VITE_ADMIN_QUESTION || 'Who are you?';
+const DEFAULT_ADMIN_ANSWER = import.meta.env.VITE_ADMIN_ANSWER || 'rohan kholi';
 const DEFAULT_ADMIN_EMAIL = 'setmystay02@gmail.com';
 const DEFAULT_ADMIN_PHONE = '+918210552902';
 const DEFAULT_ADMIN_ADDRESS = 'Office no. 01, Neelsidhi Splendour, Sector 15, CBD Belapur, Navi Mumbai, Maharashtra 400614';
@@ -836,28 +837,7 @@ function AdminDashboard() {
                    const realProperties = allData.filter(p => (p.propertyType as string) !== 'Roommate');
                    const rawRoommates = allData.filter(p => (p.propertyType as string) === 'Roommate');
 
-                    const realRoommates: RoommateProfile[] = rawRoommates.map(listing => ({
-                        id: listing.id,
-                        propertyType: 'Roommate',
-                        ownerName: listing.title,
-                        age: 25, 
-                        rent: listing.rent,
-                        city: listing.city,
-                        locality: listing.locality,
-                        state: listing.state,
-                        completeAddress: listing.completeAddress,
-                        partialAddress: listing.partialAddress,
-                        contactPhonePrimary: listing.contactPhonePrimary,
-                        description: listing.description || `Looking for roommate in ${listing.locality}`,
-                        preferences: listing.amenities || [], 
-                        gender: 'Any', 
-                        images: listing.images?.length ? listing.images : ['https://placehold.co/400x400'],
-                        views: listing.views,
-                        ownerId: listing.ownerId,
-                        hasProperty: true, 
-                        status: listing.status as any,
-                        submittedAt: listing.submittedAt
-                    }));
+                    const realRoommates: RoommateProfile[] = rawRoommates.map(listingToRoommateProfile);
 
                     setProperties(realProperties);
                     setRoommates(realRoommates);
@@ -904,7 +884,16 @@ function AdminDashboard() {
             fetchAdminData();
 
             setExplicitVendors(getFromLocalStorage('explicitVendors', []));
-            setPricing(getFromLocalStorage('pricing', defaultPricing));
+            api.get('/pricing/').then((res: any) => {
+                if (res.data && res.data.listings) {
+                    setPricing(res.data);
+                    saveToLocalStorage('pricing', res.data);
+                } else {
+                    setPricing(getFromLocalStorage('pricing', defaultPricing));
+                }
+            }).catch(() => {
+                setPricing(getFromLocalStorage('pricing', defaultPricing));
+            });
         }
     }, [isAuthenticated]);
 
@@ -1093,12 +1082,17 @@ function AdminDashboard() {
         });
     };
 
-    const handleSavePricing = () => {
+    const handleSavePricing = async () => {
         if (!swipeLimit || swipeLimit < 1) { toast({ title: "Invalid swipe limit", description: "Enter 1 or more.", variant: "destructive" }); return; }
         saveToLocalStorage('pricing', pricing);
         saveSettings({ swipeLimit });
-        toast({ title: "Pricing Updated", description: "The new prices have been saved." });
-    }
+        try {
+            await api.post('/pricing/', pricing);
+            toast({ title: "Pricing Updated", description: "The new prices have been saved to the database and site." });
+        } catch (e) {
+            toast({ title: "Pricing Saved Locally", description: "Saved locally, could not reach database." });
+        }
+    };
     const handleUpdatePassword = (newPass: string) => {
         saveToLocalStorage('admin_password', newPass);
         setAdminPassword(newPass);
@@ -1809,52 +1803,69 @@ function AdminDashboard() {
                     {currentItem && (
                         <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
                              {Array.isArray(currentItem.images) && currentItem.images.length > 0 && (
-                                <div className="relative w-full h-64 bg-slate-200 rounded-lg overflow-hidden">
-                                     <img 
-                                        src={currentItem.images[currentMediaIndex]} 
-                                        alt="Listing Media" 
-                                        className="absolute inset-0 h-full w-full object-contain p-2"
-                                     />
+                                <div className="relative w-full h-64 bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center">
+                                     {isVideoUrl(currentItem.images[currentMediaIndex]) ? (
+                                        <video 
+                                            key={currentItem.images[currentMediaIndex]}
+                                            src={currentItem.images[currentMediaIndex]} 
+                                            controls 
+                                            playsInline
+                                            className="w-full h-full object-contain"
+                                        />
+                                     ) : (
+                                        <img 
+                                            src={currentItem.images[currentMediaIndex]} 
+                                            alt="Listing Media" 
+                                            className="absolute inset-0 h-full w-full object-contain p-2"
+                                        />
+                                     )}
                                      {currentItem.images.length > 1 && (
                                          <>
-                                            <Button size="icon" variant="ghost" className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50" onClick={() => setCurrentMediaIndex(i => Math.max(0, i-1))} disabled={currentMediaIndex === 0}><ChevronLeft /></Button>
-                                            <Button size="icon" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50" onClick={() => setCurrentMediaIndex(i => Math.min(currentItem.images.length - 1, i+1))} disabled={currentMediaIndex === currentItem.images.length - 1}><ChevronRight /></Button>
+                                            <Button size="icon" variant="ghost" className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/40 hover:bg-black/60 z-10" onClick={() => setCurrentMediaIndex(i => Math.max(0, i-1))} disabled={currentMediaIndex === 0}><ChevronLeft /></Button>
+                                            <Button size="icon" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/40 hover:bg-black/60 z-10" onClick={() => setCurrentMediaIndex(i => Math.min(currentItem.images.length - 1, i+1))} disabled={currentMediaIndex === currentItem.images.length - 1}><ChevronRight /></Button>
                                          </>
                                      )}
                                 </div>
                             )}
 
-                             {('aadhaarCardUrl' in currentItem || 'electricityBillUrl' in currentItem || 'nocUrl' in currentItem) && (
+                             {Boolean(
+                                currentItem.aadhaarCardUrl || 
+                                currentItem.electricityBillUrl || 
+                                currentItem.nocUrl ||
+                                (currentItem as any).document_aadhaar ||
+                                (currentItem as any).document_electricity ||
+                                (currentItem as any).document_noc
+                             ) && (
                                 <div className="border rounded-lg p-4 bg-blue-50">
                                     <h4 className="font-semibold text-base mb-3 flex items-center gap-2">
                                         <FileCheck className="w-5 h-5 text-blue-700" />
                                         Verification Documents
                                     </h4>
                                     <div className="flex flex-wrap gap-4">
-                                        {'aadhaarCardUrl' in currentItem && currentItem.aadhaarCardUrl && (
+                                        {(currentItem.aadhaarCardUrl || (currentItem as any).document_aadhaar) && (
                                             <div className="flex flex-col items-center gap-2">
                                                 <FileText className="w-8 h-8 text-blue-600"/>
                                                 <p className="text-sm font-medium">Aadhaar Card</p>
                                                 <Button asChild variant="outline" size="sm">
-                                                    <a href={currentItem.aadhaarCardUrl} target="_blank" rel="noopener noreferrer">View</a>
+                                                    <a href={currentItem.aadhaarCardUrl || (currentItem as any).document_aadhaar} target="_blank" rel="noopener noreferrer">View</a>
                                                 </Button>
                                             </div>
                                         )}
-                                        {'electricityBillUrl' in currentItem && currentItem.electricityBillUrl && (
+                                        {(currentItem.electricityBillUrl || (currentItem as any).document_electricity) && (
                                             <div className="flex flex-col items-center gap-2">
                                                 <FileText className="w-8 h-8 text-blue-600"/>
                                                 <p className="text-sm font-medium">Electricity Bill</p>
                                                 <Button asChild variant="outline" size="sm">
-                                                    <a href={currentItem.electricityBillUrl} target="_blank" rel="noopener noreferrer">View</a>
+                                                    <a href={currentItem.electricityBillUrl || (currentItem as any).document_electricity} target="_blank" rel="noopener noreferrer">View</a>
                                                 </Button>
                                             </div>
                                         )}
-                                        {'nocUrl' in currentItem && currentItem.nocUrl && (
+                                        {(currentItem.nocUrl || (currentItem as any).document_noc) && (
                                             <div className="flex flex-col items-center gap-2">
                                                 <FileText className="w-8 h-8 text-blue-600"/>
                                                 <p className="text-sm font-medium">NOC</p>
                                                 <Button asChild variant="outline" size="sm">
-                                                    <a href={currentItem.nocUrl} target="_blank" rel="noopener noreferrer">View</a>
+                                                    <a href={currentItem.nocUrl || (currentItem as any).document_noc} target="_blank" rel="noopener noreferrer">View</a>
                                                 </Button>
                                             </div>
                                         )}

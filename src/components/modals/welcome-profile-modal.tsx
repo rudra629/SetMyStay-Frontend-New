@@ -50,6 +50,7 @@ export function WelcomeProfileModal({ isLoggedIn }: { isLoggedIn: boolean }) {
       try { done = JSON.parse(localStorage.getItem(DONE_KEY) || "[]"); } catch { /* ignore */ }
       localStorage.setItem(DONE_KEY, JSON.stringify([...done, key]));
       localStorage.setItem("setmystay_profile", JSON.stringify(r.data));
+      localStorage.setItem("is_profile_complete", "true");
       addProfile(r.data as any);
       localStorage.setItem("user_name", r.data.name);
       toast.success("Thanks! Your details are saved.");

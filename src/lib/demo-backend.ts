@@ -222,7 +222,7 @@ function handle(method: string, url: string, body: Record<string, any>): [number
   if (res) return res;
 
   if (p === "/payments/create-order/")
-    return [200, { order_id: `order_demo_${Date.now()}`, amount: Math.round(Number(body.amount || 0) * 100), currency: "INR", razorpay_key: "demo" }];
+    return [200, { order_id: `order_demo_${Date.now()}`, amount: Math.round(Number(body.amount || 0) * 100), currency: "INR", razorpay_key: "demo", key: "demo", key_id: "demo" }];
   if (p.startsWith("/payments/verify")) {
     d.purchases.unshift({
       id: String(++d.nextId), user_name: localStorage.getItem("user_name") || "Demo User", user_email: "demo@setmystay.com",

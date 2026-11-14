@@ -14,6 +14,7 @@ import { UploadCloud, X, ShieldCheck, Video, Plus, FileText, FileUp, Wifi, Car, 
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AutocompleteInput } from '@/components/shared/autocomplete-input';
+import { SearchableSelect } from '@/components/shared/searchable-select';
 import { indianStates } from '@/lib/states';
 import { allIndianCities, indianCitiesByState } from '@/lib/cities';
 import { indianAreas } from '@/lib/areas';
@@ -21,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
+import { feeFor } from '@/lib/app-settings';
 
 const amenitiesList = [
   'Electricity Backup', '24x7 Water Supply', 'Lift/Elevator', 'Gated Security', 'Reserved Parking', 'Visitor Parking', 'Intercom Facility', 'Power Backup', 'Fire Safety', 'CCTV Surveillance',
@@ -66,7 +68,9 @@ const formSchema = z.object({
   rent: z.coerce.number().min(1000, 'Rent must be at least 1000'),
   area: z.coerce.number().min(50, 'Area must be at least 50 sq ft'),
   age: z.coerce.number().min(18, 'Must be at least 18 years old').max(99, 'Invalid age').optional(),
-  state: z.string().min(1, 'State is required'),
+  state: z.string().refine((val) => indianStates.includes(val), {
+    message: 'Please select a valid State from the dropdown.',
+  }),
   city: z.string().min(1, 'City is required'),
   locality: z.string().min(1, 'Area / Locality is required'),
   sector: z.string().optional(),
@@ -657,13 +661,15 @@ export function ListPropertySection({ onSubmit }: ListPropertySectionProps) {
               <CardContent className="grid md:grid-cols-2 gap-6">
                  <FormField control={form.control} name="state" render={({ field }) => (
                     <FormItem>
-                        <FormLabel>State</FormLabel>
+                        <FormLabel>State <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
-                            <AutocompleteInput 
-                                placeholder="e.g., Maharashtra"
+                            <SearchableSelect 
+                                placeholder="Select State..."
+                                searchPlaceholder="Search Indian State..."
+                                emptyText="No matching state found."
                                 value={field.value}
                                 onChange={field.onChange}
-                                suggestions={indianStates}
+                                options={indianStates}
                             />
                         </FormControl>
                         <FormMessage />
@@ -671,13 +677,16 @@ export function ListPropertySection({ onSubmit }: ListPropertySectionProps) {
                   )}/>
                  <FormField control={form.control} name="city" render={({ field }) => (
                     <FormItem>
-                        <FormLabel>City</FormLabel>
+                        <FormLabel>City <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
-                            <AutocompleteInput 
-                                placeholder="e.g., Navi Mumbai"
+                            <SearchableSelect 
+                                placeholder={stateValue ? "Select City..." : "Select State first"}
+                                searchPlaceholder="Search City..."
+                                emptyText="No city found for this state."
                                 value={field.value}
                                 onChange={field.onChange}
-                                suggestions={citySuggestions}
+                                options={citySuggestions}
+                                disabled={!stateValue}
                             />
                         </FormControl>
                         <FormMessage />
@@ -787,7 +796,7 @@ export function ListPropertySection({ onSubmit }: ListPropertySectionProps) {
             </Card>
 
             <Button type="submit" size="lg" className="w-full">
-                Proceed to Payment & List
+                Proceed to Payment & List (₹{feeFor(propertyType)})
             </Button>
           </form>
         </Form>

@@ -26,7 +26,7 @@ export interface Coupon {
 
 export interface Listing {
   id: string;
-  propertyType: 'PG' | 'Rental';
+  propertyType: 'PG' | 'Rental' | 'Roommate';
   title: string;
   rent: number;
   area: number;
@@ -83,8 +83,11 @@ export interface RoommateProfile {
   images: string[];
   views: number;
   ownerId: string;
+  vendorNumber?: string;
   aadhaarCardUrl?: string;
   electricityBillUrl?: string;
+  nocUrl?: string;
+  videoUrl?: string;
   hasProperty: boolean;
   status?: 'pending' | 'approved' | 'rejected';
   verifiedBy?: string; // Staff ID

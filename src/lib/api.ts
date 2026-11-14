@@ -36,6 +36,11 @@ const adaptPropertyToListing = (data: any): Listing => {
   if (data.property_type === 'RENTAL') mappedType = 'Rental';
   if (data.property_type === 'ROOMMATE') mappedType = 'Roommate';
 
+  const rawImages = Array.isArray(data.images) ? data.images : [];
+  const videoObj = rawImages.find((img: any) => typeof img === 'object' && img?.is_video);
+  const videoUrl = videoObj ? videoObj.image_url : (data.video_url || undefined);
+  const imageUrls = rawImages.map((img: any) => typeof img === 'string' ? img : img.image_url).filter(Boolean);
+
   return {
     id: data.id.toString(),
     propertyType: mappedType as any, 
@@ -44,7 +49,7 @@ const adaptPropertyToListing = (data: any): Listing => {
     area: data.sq_ft || 0,
     city: data.city,
     locality: data.area,
-    state: 'Maharashtra',
+    state: data.state || 'Maharashtra',
     completeAddress: data.address,
     partialAddress: data.area,
     ownerName: data.owner_name || 'Owner',
@@ -54,13 +59,15 @@ const adaptPropertyToListing = (data: any): Listing => {
     furnishedStatus: data.furnishing || 'Unfurnished',
     
     // 👇 FIX: Regex strips the [, ], and " characters from the corrupted database strings
-    amenities: data.amenities ? data.amenities.map((a: any) => a.name.replace(/[\[\]"]/g, '').trim()).filter(Boolean) : [],
+    amenities: data.amenities ? data.amenities.map((a: any) => typeof a === 'string' ? a.replace(/[\[\]"]/g, '').trim() : (a.name || '').replace(/[\[\]"]/g, '').trim()).filter(Boolean) : [],
     
     size: data.sq_ft ? `${data.sq_ft} sq ft` : 'N/A',
-    images: data.images ? data.images.map((img: any) => img.image_url) : [],
+    images: imageUrls,
+    videoUrl: videoUrl,
     views: 0,
-    ownerId: data.owner || '1',
+    ownerId: data.owner?.toString() || '1',
     brokerStatus: data.is_broker ? 'With Broker' : 'Without Broker', 
+    vendorNumber: data.vendor_number || data.vendorNumber || undefined,
 
     aadhaarCardUrl: data.document_aadhaar || undefined,
     electricityBillUrl: data.document_electricity || undefined,
@@ -72,28 +79,64 @@ const adaptPropertyToListing = (data: any): Listing => {
   };
 };
 
+export const listingToRoommateProfile = (listing: Listing): RoommateProfile => ({
+  id: listing.id,
+  propertyType: 'Roommate',
+  ownerName: listing.ownerName || listing.title,
+  age: 25,
+  rent: listing.rent,
+  city: listing.city,
+  locality: listing.locality,
+  state: listing.state || 'Maharashtra',
+  completeAddress: listing.completeAddress || listing.partialAddress || '',
+  partialAddress: listing.partialAddress || listing.completeAddress || '',
+  contactPhonePrimary: listing.contactPhonePrimary,
+  contactPhoneSecondary: listing.contactPhoneSecondary,
+  contactEmail: listing.contactEmail,
+  description: listing.description || `Looking for roommate in ${listing.locality}`,
+  preferences: listing.amenities || [],
+  gender: 'Any',
+  images: listing.images?.length ? listing.images : ['https://placehold.co/400x400'],
+  videoUrl: listing.videoUrl,
+  views: listing.views || 0,
+  ownerId: listing.ownerId || '1',
+  vendorNumber: listing.vendorNumber,
+  aadhaarCardUrl: listing.aadhaarCardUrl,
+  electricityBillUrl: listing.electricityBillUrl,
+  nocUrl: listing.nocUrl,
+  hasProperty: true,
+  status: listing.status as any,
+  submittedAt: listing.submittedAt,
+});
+
 const adaptRoommateToProfile = (data: any): RoommateProfile => {
   return {
     id: data.id.toString(),
     propertyType: 'Roommate',
-    ownerName: data.user_name || 'User',
+    ownerName: data.user_name || data.owner_name || 'User',
     age: data.age || 25,
-    rent: data.budget,
-    city: data.city || data.location_preference,
-    locality: data.location_preference,
-    state: 'Maharashtra',
-    completeAddress: data.location_preference,
-    partialAddress: data.location_preference,
+    rent: data.budget || data.rent || 0,
+    city: data.city || data.location_preference || '',
+    locality: data.location_preference || data.area || '',
+    state: data.state || 'Maharashtra',
+    completeAddress: data.location_preference || data.address || '',
+    partialAddress: data.location_preference || data.area || '',
     contactPhonePrimary: data.phone_primary || 'Hidden',
-    description: data.bio || `Looking for roommate in ${data.location_preference}`,
+    contactPhoneSecondary: data.phone_secondary || undefined,
+    description: data.bio || data.description || `Looking for roommate in ${data.location_preference || data.area || ''}`,
     preferences: data.preferences || [
         data.is_smoker ? 'Smoker' : 'Non-Smoker', 
         data.has_pets ? 'Has Pets' : 'No Pets'
     ],
-    gender: data.gender || 'Any',
-    images: [data.image || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2e?w=800&q=80'],
+    gender: data.gender || data.gender_preference || 'Any',
+    images: Array.isArray(data.images) ? data.images.map((img: any) => typeof img === 'string' ? img : img.image_url) : [data.image || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2e?w=800&q=80'],
+    videoUrl: data.video_url || undefined,
     views: 0,
-    ownerId: data.user?.toString() || '1',
+    ownerId: data.user?.toString() || data.owner?.toString() || '1',
+    vendorNumber: data.vendor_number || undefined,
+    aadhaarCardUrl: data.document_aadhaar || data.aadhaarCardUrl || undefined,
+    electricityBillUrl: data.document_electricity || data.electricityBillUrl || undefined,
+    nocUrl: data.document_noc || data.nocUrl || undefined,
     hasProperty: !!data.has_property,
     submittedAt: data.created_at || '2025-01-01',
     status: data.status === 'APPROVED' ? 'approved' : data.status === 'REJECTED' ? 'rejected' : 'pending',
@@ -335,13 +378,25 @@ export interface PurchaseRecord {
 }
 
 export const getMyPurchases = async (): Promise<PurchaseRecord[]> => {
-  const response = await api.get('/payments/my-history/');
+  const email = typeof window !== 'undefined' ? (localStorage.getItem('user_email') || '') : '';
+  const url = email ? `/payments/my-history/?email=${encodeURIComponent(email)}` : '/payments/my-history/';
+  const response = await api.get(url);
   return response.data.results ? response.data.results : response.data;
 };
 
 export const getAllPurchasesAdmin = async (): Promise<PurchaseRecord[]> => {
   const response = await api.get('/payments/all-history/');
   return response.data.results ? response.data.results : response.data;
+};
+
+export const getPricingConfig = async () => {
+  const response = await api.get('/pricing/');
+  return response.data;
+};
+
+export const updatePricingConfig = async (pricingData: any) => {
+  const response = await api.post('/pricing/', pricingData);
+  return response.data;
 };
 
 export default api;

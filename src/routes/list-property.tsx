@@ -1,4 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ListPropertySection } from "@/components/sections/list-property-section";
+import { ListPropertyPaymentModal } from "@/components/modals/list-property-payment-modal";
+import { feeFor, fetchAndCachePricing } from "@/lib/app-settings";
+import { createListing } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 export const Route = createFileRoute("/list-property")({
   head: () => ({
@@ -14,89 +22,92 @@ export const Route = createFileRoute("/list-property")({
   component: ListPropertyPage,
 });
 
-import { useState } from 'react';
-import { useNavigate, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ListPropertySection } from '@/components/sections/list-property-section';
-import { ListPropertyPaymentModal } from '@/components/modals/list-property-payment-modal';
-import { feeFor } from '@/lib/app-settings';
-import { createListing } from '@/lib/api';
-import { useToast } from '@/hooks/use-toast';
-
 function ListPropertyPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [formData, setFormData] = useState<any>(null);
+  const [listingAmount, setListingAmount] = useState<number>(() => feeFor("RENTAL"));
 
-  // 1. When Form is Valid, Open Payment Modal
+  useEffect(() => {
+    fetchAndCachePricing().catch(() => {});
+  }, []);
+
+  // 1. When Form is Valid, Open Payment Modal with the exact price for this property type
   const handleFormSubmit = (data: any) => {
-    console.log("FORM DATA PAYLOAD:", data);
     setFormData(data);
+    const computedFee = feeFor(data?.property_type ?? data?.propertyType);
+    setListingAmount(computedFee);
     setIsPaymentModalOpen(true);
   };
 
-  // 2. When Payment is "Successful", Send Data to Django
-  const handlePaymentSuccess = async (plan: { title: string; price: number }) => {
+  // 2. When Payment is Successful, Send Data to Django
+  const handlePaymentSuccess = async (plan?: { title: string; price: number }) => {
     try {
       setIsPaymentModalOpen(false);
-      
-      const payload = new FormData();
-      
-      // --- BASIC FIELDS ---
-      payload.append('title', formData.title);
-      payload.append('description', formData.description || 'No description provided');
-      payload.append('property_type', formData.property_type); 
-      payload.append('rent', formData.rent.toString());
-      payload.append('deposit', formData.rent.toString());
-      
-      // --- LOCATION ---
-      payload.append('city', formData.city);
-      payload.append('area', formData.locality || formData.area);
-      payload.append('address', formData.address);
-      
-      // --- SPECS ---
-      payload.append('sq_ft', formData.area ? formData.area.toString() : '500'); 
-      payload.append('bhk', '1BHK');       
-      payload.append('furnishing', 'Semi'); 
-      payload.append('status', 'PENDING');
 
-      payload.append('owner_name', formData.owner_name);
-      payload.append('phone_primary', formData.phone_primary);
-      
-      if (formData.phone_secondary) {
-        payload.append('phone_secondary', formData.phone_secondary);
+      const payload = new FormData();
+
+      // --- BASIC FIELDS ---
+      payload.append("title", formData.title);
+      payload.append("description", formData.description || "No description provided");
+      payload.append("property_type", formData.property_type);
+      payload.append("rent", formData.rent.toString());
+      payload.append("deposit", formData.rent.toString());
+
+      // --- LOCATION ---
+      if (formData.state) {
+        payload.append("state", formData.state);
+      }
+      payload.append("city", formData.city);
+      payload.append("area", formData.locality || formData.area);
+      payload.append("address", formData.address || `${formData.locality || ""}, ${formData.city || ""}`);
+
+      if (formData.vendor_number) {
+        payload.append("vendor_number", formData.vendor_number);
       }
 
-      // 👇 THE MISSING PIECE: ADDING AMENITIES TO THE PAYLOAD 👇
+      // --- SPECS ---
+      payload.append("sq_ft", formData.area ? formData.area.toString() : "500");
+      payload.append("bhk", "1BHK");
+      payload.append("furnishing", "Semi");
+      payload.append("status", "PENDING");
+
+      payload.append("owner_name", formData.owner_name);
+      payload.append("phone_primary", formData.phone_primary);
+
+      if (formData.phone_secondary) {
+        payload.append("phone_secondary", formData.phone_secondary);
+      }
+
+      // --- AMENITIES ---
       if (formData.amenities) {
-        const amenitiesString = Array.isArray(formData.amenities) 
-            ? formData.amenities.join(',') 
-            : formData.amenities;
-        payload.append('amenities_list', amenitiesString);
+        const amenitiesString = Array.isArray(formData.amenities)
+          ? formData.amenities.join(",")
+          : formData.amenities;
+        payload.append("amenities_list", amenitiesString);
       }
 
       // --- CONDITIONAL FIELDS BASED ON TYPE ---
-      if (formData.property_type === 'ROOMMATE') {
-          payload.append('gender_preference', formData.gender_preference);
-          payload.append('sharing_status', formData.sharing_status);
-      } else if (formData.property_type === 'RENTAL') {
-          payload.append('is_broker', formData.is_broker ? 'True' : 'False');
+      if (formData.property_type === "ROOMMATE") {
+        payload.append("gender_preference", formData.gender_preference || "Any");
+        payload.append("sharing_status", formData.sharing_status || "Living in");
+      } else if (formData.property_type === "RENTAL") {
+        payload.append("is_broker", formData.is_broker ? "True" : "False");
       } else {
-          payload.append('occupancy_type', 'Single'); 
-          payload.append('gender_preference', 'Any'); 
+        payload.append("occupancy_type", "Single");
+        payload.append("gender_preference", "Any");
       }
 
-      // --- IMAGES ---
+      // --- IMAGES & VIDEO ---
       if (formData.images && formData.images.length > 0) {
         formData.images.forEach((file: File) => {
-          payload.append('uploaded_images', file);
+          payload.append("uploaded_images", file);
         });
       }
       if (formData.video_file) {
-          payload.append('uploaded_video', formData.video_file);
+        payload.append("uploaded_video", formData.video_file);
       }
 
       // --- DOCUMENTS ---
@@ -105,16 +116,16 @@ function ListPropertyPage() {
       const nocFile = formData.noc;
 
       if (aadharFile) {
-          payload.append('document_aadhaar', Array.isArray(aadharFile) ? aadharFile[0] : aadharFile);
+        payload.append("document_aadhaar", Array.isArray(aadharFile) ? aadharFile[0] : aadharFile);
       }
       if (electricFile) {
-          payload.append('document_electricity', Array.isArray(electricFile) ? electricFile[0] : electricFile);
+        payload.append("document_electricity", Array.isArray(electricFile) ? electricFile[0] : electricFile);
       }
       if (nocFile) {
-          payload.append('document_noc', Array.isArray(nocFile) ? nocFile[0] : nocFile);
+        payload.append("document_noc", Array.isArray(nocFile) ? nocFile[0] : nocFile);
       }
-      
-      console.log("Submitting Payload..."); 
+
+      console.log("Submitting Payload...");
 
       await createListing(payload);
 
@@ -123,13 +134,12 @@ function ListPropertyPage() {
         description: "Your property has been submitted for review.",
       });
 
-      navigate({ to: '/' }); 
-
+      navigate({ to: "/" });
     } catch (error: any) {
       console.error("Submission Error:", error);
-      
-      const serverMessage = error.response?.data 
-        ? JSON.stringify(error.response.data) 
+
+      const serverMessage = error.response?.data
+        ? JSON.stringify(error.response.data)
         : "Please check that all fields are correct.";
 
       toast({
@@ -144,17 +154,19 @@ function ListPropertyPage() {
     <main className="min-h-screen bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <Button asChild variant="outline">
-          <Link to="/"><ArrowLeft /> Back to Home</Link>
+          <Link to="/">
+            <ArrowLeft /> Back to Home
+          </Link>
         </Button>
       </div>
       <ListPropertySection onSubmit={handleFormSubmit} />
-      
-      <ListPropertyPaymentModal 
+
+      <ListPropertyPaymentModal
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         onProceedToPayment={handlePaymentSuccess}
-        amount={feeFor(formData?.property_type ?? formData?.propertyType)}
-        pricing={null} 
+        amount={listingAmount}
+        pricing={null}
       />
     </main>
   );

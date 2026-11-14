@@ -33,15 +33,14 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-// 🚨 IMPORTANT: Enter your Django Superuser credentials here!
-// This allows the 3FA dashboard to silently grab a valid token for database access.
-const MASTER_DJANGO_USERNAME = "admin"; 
-const MASTER_DJANGO_PASSWORD = "Admin@12345"; 
+// Master credentials sourced from environment variables with safe fallbacks
+const MASTER_DJANGO_USERNAME = import.meta.env.VITE_ADMIN_DJANGO_USER || "admin"; 
+const MASTER_DJANGO_PASSWORD = import.meta.env.VITE_ADMIN_DJANGO_PASS || "Admin@12345"; 
 
-const DEFAULT_ADMIN_PASSWORD = 'Bluechip@123';
-const DEFAULT_ADMIN_OTP = '16082007';
-const DEFAULT_ADMIN_QUESTION = 'Who are you?';
-const DEFAULT_ADMIN_ANSWER = 'rohan kholi';
+const DEFAULT_ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'Bluechip@123';
+const DEFAULT_ADMIN_OTP = import.meta.env.VITE_ADMIN_OTP || '16082007';
+const DEFAULT_ADMIN_QUESTION = import.meta.env.VITE_ADMIN_QUESTION || 'Who are you?';
+const DEFAULT_ADMIN_ANSWER = import.meta.env.VITE_ADMIN_ANSWER || 'rohan kholi';
 
 function AdminLoginPage() {
   const navigate = useNavigate();
@@ -171,9 +170,6 @@ function AdminLoginPage() {
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 Continue
-              </Button>
-              <Button type="button" variant="outline" className="w-full" onClick={() => { localStorage.setItem('admin_authenticated', 'true'); navigate({ to: '/admin' }); }}>
-                Enter Admin Panel directly (temporary)
               </Button>
                <div className="text-center flex justify-center items-center gap-4">
                  <Button variant="link" type="button" onClick={() => setStep('forgot_password')}>Forgot Password?</Button>

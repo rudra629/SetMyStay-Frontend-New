@@ -18,7 +18,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import type { Listing, RoommateProfile, Page, ListingType, UnlockPlan, Bed, Advertisement, Coupon, Purchase, AnyListing, PricingData } from "@/lib/types";
 import { defaultPricing } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { getProperties, toggleFavoriteProperty, getCoupons, getAdvertisements, createListing } from "@/lib/api";
+import { getProperties, toggleFavoriteProperty, getCoupons, getAdvertisements, createListing, listingToRoommateProfile } from "@/lib/api";
 
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -29,7 +29,7 @@ import { PropertyDetails } from "@/components/modals/property-details";
 import { RoommateDetails } from "@/components/modals/roommate-details";
 import { UnlockDetailsModal } from "@/components/modals/unlock-details-modal";
 import { ListPropertyPaymentModal } from "@/components/modals/list-property-payment-modal";
-import { feeFor } from "@/lib/app-settings";
+import { feeFor, fetchAndCachePricing } from "@/lib/app-settings";
 import { WelcomeProfileModal } from "@/components/modals/welcome-profile-modal";
 import { AuthModal } from "@/components/modals/auth-modal";
 import { ChatModal } from "@/components/modals/chat-modal";
@@ -114,28 +114,7 @@ function Home() {
           const realProperties = allData.filter(p => (p.propertyType as string) !== 'Roommate');
           const rawRoommates = allData.filter(p => (p.propertyType as string) === 'Roommate');
 
-          const realRoommates: RoommateProfile[] = rawRoommates.map(listing => ({
-            id: listing.id,
-            propertyType: 'Roommate',
-            ownerName: listing.title,
-            age: 25, 
-            rent: listing.rent,
-            city: listing.city,
-            locality: listing.locality,
-            state: listing.state,
-            completeAddress: listing.completeAddress,
-            partialAddress: listing.partialAddress,
-            contactPhonePrimary: listing.contactPhonePrimary,
-            description: listing.description || `Looking for roommate in ${listing.locality}`,
-            preferences: listing.amenities || [], 
-            gender: 'Any', 
-            images: listing.images?.length ? listing.images : ['https://placehold.co/400x400'],
-            views: listing.views,
-            ownerId: listing.ownerId,
-            hasProperty: true, 
-            status: listing.status as any,
-            submittedAt: listing.submittedAt
-          }));
+          const realRoommates: RoommateProfile[] = rawRoommates.map(listingToRoommateProfile);
 
           setAllListings(realProperties);
           setAllRoommates(realRoommates);
@@ -167,7 +146,9 @@ function Home() {
 
       fetchData(); 
       
-      setPricing(getFromLocalStorage('pricing', defaultPricing));
+      fetchAndCachePricing().then((p) => setPricing(p)).catch(() => {
+        setPricing(getFromLocalStorage('pricing', defaultPricing));
+      });
       
       const allUserData: any = getFromLocalStorage('setmystay_user_data', {});
       const userData = loggedInStatus ? (allUserData.defaultUser || defaultUserState) : defaultUserState;
@@ -177,7 +158,15 @@ function Home() {
           isUnlimited: userData.unlocks?.isUnlimited || false,
           unlockedIds: new Set(userData.unlocks?.unlockedIds || []),
       });
-      setPurchaseHistory((userData.purchaseHistory || []).map((p: any) => ({...p, date: new Date(p.date)})));
+
+      let localHistory: any[] = [];
+      try {
+        const raw = localStorage.getItem('setmystay_purchase_history');
+        if (raw) localHistory = JSON.parse(raw);
+      } catch {}
+      const combinedHistory = [...(userData.purchaseHistory || []), ...localHistory];
+      const uniqueHistory = Array.from(new Map(combinedHistory.map((p) => [p.id || `${p.plan || p.plan_name}-${p.date || p.created_at}`, p])).values());
+      setPurchaseHistory(uniqueHistory.map((p: any) => ({ ...p, date: new Date(p.date || p.created_at || Date.now()) })));
       
       const currentLikedIds = new Set<string>(userData.likedItemIds || []);
       setLikedItemIds(currentLikedIds);
@@ -476,8 +465,9 @@ function Home() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     saveToLocalStorage('setmystay_isLoggedIn', false);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     setUnlocks(defaultUserState.unlocks);
-    setPurchaseHistory(defaultUserState.purchaseHistory);
     setLikedItemIds(new Set());
     setActivePage('home');
     toast({ title: "Logged Out", description: "You have been successfully logged out." });

@@ -1,4 +1,5 @@
 import { defaultPricing } from "@/lib/data";
+import { getPricingConfig } from "@/lib/api";
 
 export type ListingKind = "RENTAL" | "PG" | "ROOMMATE";
 export type AppSettings = { swipeLimit: number };
@@ -7,6 +8,23 @@ export const DEFAULT_SETTINGS: AppSettings = { swipeLimit: 25 };
 const KEY = "setmystay_app_settings";
 const SWIPES_KEY = "setmystay_swipes";
 const PRICING_KEY = "pricing";
+
+export async function fetchAndCachePricing(): Promise<typeof defaultPricing> {
+  try {
+    const remote = await getPricingConfig();
+    if (remote && remote.listings) {
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem(PRICING_KEY, JSON.stringify(remote));
+      }
+      return remote;
+    }
+  } catch { /* use cached or default */ }
+  try {
+    const raw = typeof localStorage !== "undefined" ? localStorage.getItem(PRICING_KEY) : null;
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return defaultPricing;
+}
 
 export function loadSettings(): AppSettings {
   try {
@@ -29,10 +47,14 @@ export function feeFor(type: string | undefined | null): number {
   let listings = defaultPricing.listings;
   try {
     const raw = typeof localStorage !== "undefined" ? localStorage.getItem(PRICING_KEY) : null;
-    if (raw) listings = { ...listings, ...(JSON.parse(raw).listings || {}) };
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.listings) listings = { ...listings, ...parsed.listings };
+    }
   } catch { /* ignore */ }
   const k = normalizeKind(type);
-  return Number(k === "PG" ? listings.pg : k === "ROOMMATE" ? listings.roommate : listings.rental);
+  const fee = k === "PG" ? listings.pg : k === "ROOMMATE" ? listings.roommate : listings.rental;
+  return Number(fee) > 0 ? Number(fee) : (k === "PG" ? 349 : k === "ROOMMATE" ? 149 : 999);
 }
 
 function accountKey() {

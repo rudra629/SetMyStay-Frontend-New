@@ -6,7 +6,7 @@ import { DetailsModalWrapper } from './details-modal-wrapper';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, IndianRupee, Home, BedDouble, ChevronLeft, ChevronRight, Lock, MessageSquare, Phone, Clock, User } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, isVideoUrl } from '@/lib/utils';
 
 interface PropertyDetailsProps {
   listing: Listing | null;
@@ -37,14 +37,14 @@ const MediaGallery = ({ listing, isUnlocked, onUnlock }: { listing: Listing; isU
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const allImages = listing.images || [];
-  const allMedia = [...allImages, ...(listing.videoUrl ? [listing.videoUrl] : [])];
+  const allMedia = Array.from(new Set([...allImages, ...(listing.videoUrl ? [listing.videoUrl] : [])]));
   const hasMoreMedia = allMedia.length > 2;
 
   const mediaToShow = isUnlocked
     ? allMedia
     : hasMoreMedia
-      ? [...allImages.slice(0, 2), 'unlock_placeholder']
-      : allImages.slice(0, 2);
+      ? [...allMedia.slice(0, 2), 'unlock_placeholder']
+      : allMedia.slice(0, 2);
 
   const nextMedia = () => {
     setCurrentIndex((prev) => (prev + 1) % mediaToShow.length);
@@ -61,6 +61,8 @@ const MediaGallery = ({ listing, isUnlocked, onUnlock }: { listing: Listing; isU
     );
   }
 
+  const placeholderImage = allImages.find((img) => !isVideoUrl(img)) || allImages[0];
+
   return (
     <div className="relative w-full h-80 bg-muted rounded-lg overflow-hidden border">
       {mediaToShow.map((src, index) => {
@@ -70,8 +72,8 @@ const MediaGallery = ({ listing, isUnlocked, onUnlock }: { listing: Listing; isU
               key="unlock-placeholder"
               className={`absolute inset-0 bg-slate-300 transition-opacity duration-300 ${index === currentIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             >
-              {allImages.length > 1 && (
-                <img src={allImages[1]} alt="Blurred background" className="absolute inset-0 h-full w-full object-cover filter blur-md scale-110" />
+              {placeholderImage && (
+                <img src={placeholderImage} alt="Blurred background" className="absolute inset-0 h-full w-full object-cover filter blur-md scale-110" />
               )}
               <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center rounded-lg text-center p-4">
                 <h3 className="text-lg font-semibold text-foreground">See All Photos & Videos</h3>
@@ -85,14 +87,14 @@ const MediaGallery = ({ listing, isUnlocked, onUnlock }: { listing: Listing; isU
           )
         }
         
-        const isVideo = listing.videoUrl && src === listing.videoUrl;
+        const isVideo = isVideoUrl(src) || (listing.videoUrl && src === listing.videoUrl);
         return (
           <div
             key={index}
             className={`absolute inset-0 transition-opacity duration-300 ${index === currentIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           >
             {isVideo ? (
-              <video src={src as string} controls className="w-full h-full object-contain bg-black" />
+              <video src={src as string} controls playsInline className="w-full h-full object-contain bg-black" />
             ) : (
               <img src={src as string} alt={`${listing.title} media ${index + 1}`} className="absolute inset-0 h-full w-full object-cover" />
             )}
