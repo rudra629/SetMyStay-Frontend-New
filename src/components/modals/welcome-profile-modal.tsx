@@ -27,13 +27,24 @@ export function WelcomeProfileModal({ isLoggedIn }: { isLoggedIn: boolean }) {
 
   useEffect(() => {
     if (!isLoggedIn) return setOpen(false);
+    if (localStorage.getItem("is_profile_complete") === "true") return setOpen(false);
     let done: string[] = [];
     try { done = JSON.parse(localStorage.getItem(DONE_KEY) || "[]"); } catch { /* ignore */ }
-    if (!done.includes(accountKey())) {
-      setForm((f) => ({ ...f, name: localStorage.getItem("user_name") || "", email: localStorage.getItem("user_email") || "" }));
-      setOpen(true);
+    const key = accountKey();
+    if (key !== "guest" && (done.includes(key) || done.some(d => d.toLowerCase() === key.toLowerCase()))) {
+      return setOpen(false);
     }
+    setForm((f) => ({ ...f, name: localStorage.getItem("user_name") || "", email: localStorage.getItem("user_email") || "" }));
+    setOpen(true);
   }, [isLoggedIn]);
+
+  const handleDismiss = () => {
+    const key = accountKey();
+    let done: string[] = [];
+    try { done = JSON.parse(localStorage.getItem(DONE_KEY) || "[]"); } catch { /* ignore */ }
+    localStorage.setItem(DONE_KEY, JSON.stringify([...done, key]));
+    setOpen(false);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,8 +80,8 @@ export function WelcomeProfileModal({ isLoggedIn }: { isLoggedIn: boolean }) {
   );
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="max-w-md rounded-2xl [&>button.absolute]:hidden" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+    <Dialog open={open} onOpenChange={(val) => { if (!val) handleDismiss(); else setOpen(val); }}>
+      <DialogContent className="max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle>Welcome to SetMyStay</DialogTitle>
           <DialogDescription>Tell us a little about yourself to continue.</DialogDescription>
@@ -80,7 +91,10 @@ export function WelcomeProfileModal({ isLoggedIn }: { isLoggedIn: boolean }) {
           {field("phone", "Phone number", "tel")}
           {field("email", "Email", "email")}
           {field("address", "Address")}
-          <Button type="submit" className="w-full" disabled={saving}>{saving ? "Saving..." : "Continue"}</Button>
+          <div className="flex gap-2 pt-2">
+            <Button type="button" variant="outline" className="w-1/3" onClick={handleDismiss}>Skip</Button>
+            <Button type="submit" className="w-2/3" disabled={saving}>{saving ? "Saving..." : "Continue"}</Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
