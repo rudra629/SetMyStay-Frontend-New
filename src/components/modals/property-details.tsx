@@ -112,14 +112,22 @@ const MediaGallery = ({ listing, isUnlocked, onUnlock }: { listing: Listing; isU
                 className="w-full h-full object-contain bg-black" 
               />
             ) : (
-              <img 
-                src={src as string} 
-                alt={`${listing.title} media ${index + 1}`} 
-                className="absolute inset-0 h-full w-full object-cover" 
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80";
-                }}
-              />
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-900/10 dark:bg-black/40 overflow-hidden">
+                <img 
+                  src={src as string} 
+                  alt="" 
+                  aria-hidden="true"
+                  className="absolute inset-0 h-full w-full object-cover filter blur-md opacity-30 scale-110 pointer-events-none select-none" 
+                />
+                <img 
+                  src={src as string} 
+                  alt={`${listing.title} media ${index + 1}`} 
+                  className="relative z-10 max-h-full max-w-full object-contain" 
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80";
+                  }}
+                />
+              </div>
             )}
           </div>
         );
