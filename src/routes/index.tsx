@@ -191,8 +191,33 @@ function Home() {
       const allUserData: any = getFromLocalStorage('setmystay_user_data', {});
       const userData = loggedInStatus ? (allUserData.defaultUser || defaultUserState) : defaultUserState;
       
+      let localHistory: any[] = [];
+      try {
+        const raw = localStorage.getItem('setmystay_purchase_history');
+        if (raw) localHistory = JSON.parse(raw);
+      } catch {}
+      const combinedHistory = [...(userData.purchaseHistory || []), ...localHistory];
+      const uniqueHistory = Array.from(new Map(combinedHistory.map((p) => [p.id || `${p.plan || p.plan_name}-${p.date || p.created_at}`, p])).values());
+      const parsedHistory = uniqueHistory.map((p: any) => ({ ...p, date: new Date(p.date || p.created_at || Date.now()) }));
+      setPurchaseHistory(parsedHistory);
+
       let isUnlimited = userData.unlocks?.isUnlimited || false;
       let unlimitedExpiresAt = userData.unlocks?.unlimitedExpiresAt || null;
+
+      // Auto-detect active unlimited subscription from purchase history (within 30 days)
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+      const ultimatePurchase = parsedHistory.find((p: any) => {
+        const name = (p.plan || p.plan_name || '').toLowerCase();
+        return name.includes('ultimate') || name.includes('unlimited');
+      });
+      if (ultimatePurchase) {
+        const pDate = new Date(ultimatePurchase.date).getTime();
+        if (Date.now() - pDate < thirtyDaysMs) {
+          isUnlimited = true;
+          unlimitedExpiresAt = new Date(pDate + thirtyDaysMs).toISOString();
+        }
+      }
+
       if (isUnlimited && unlimitedExpiresAt) {
         if (new Date(unlimitedExpiresAt).getTime() <= Date.now()) {
           isUnlimited = false;
@@ -206,15 +231,6 @@ function Home() {
           unlimitedExpiresAt: unlimitedExpiresAt,
           unlockedIds: new Set(userData.unlocks?.unlockedIds || []),
       });
-
-      let localHistory: any[] = [];
-      try {
-        const raw = localStorage.getItem('setmystay_purchase_history');
-        if (raw) localHistory = JSON.parse(raw);
-      } catch {}
-      const combinedHistory = [...(userData.purchaseHistory || []), ...localHistory];
-      const uniqueHistory = Array.from(new Map(combinedHistory.map((p) => [p.id || `${p.plan || p.plan_name}-${p.date || p.created_at}`, p])).values());
-      setPurchaseHistory(uniqueHistory.map((p: any) => ({ ...p, date: new Date(p.date || p.created_at || Date.now()) })));
       
       const currentLikedIds = new Set<string>(userData.likedItemIds || []);
       setLikedItemIds(currentLikedIds);
@@ -335,18 +351,53 @@ function Home() {
   }, [toast]);
   
   const handleUnlockPurchase = useCallback((plan: UnlockPlan, planName: string, amount: number) => {
+    const isUnlimited = plan === 'unlimited';
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + 30); // Exactly 1 month (30 days)
+    const expiryISO = isUnlimited ? expiry.toISOString() : null;
+
     setUnlocks(currentUnlocks => {
       const newUnlocksState = { ...currentUnlocks };
-      if (plan === 'unlimited') {
+      if (isUnlimited) {
         newUnlocksState.isUnlimited = true;
-        const expiry = new Date();
-        expiry.setDate(expiry.getDate() + 30); // Exactly 1 month (30 days)
-        newUnlocksState.unlimitedExpiresAt = expiry.toISOString();
+        newUnlocksState.unlimitedExpiresAt = expiryISO;
       } else {
-        newUnlocksState.count += plan;
+        newUnlocksState.count += (typeof plan === 'number' ? plan : 0);
+      }
+      // If user was unlocking an item, auto-unlock it immediately!
+      if (itemToUnlock?.data.id) {
+        newUnlocksState.unlockedIds = new Set(newUnlocksState.unlockedIds).add(itemToUnlock.data.id);
       }
       return newUnlocksState;
     });
+
+    // Save directly to localStorage immediately so it persists and is live across the app
+    try {
+      const allUserData: any = getFromLocalStorage('setmystay_user_data', {});
+      const currentUserData = allUserData.defaultUser || {};
+      const prevUnlocks = currentUserData.unlocks || {};
+      const newUnlockedIds = Array.from(new Set([
+        ...(prevUnlocks.unlockedIds || []),
+        ...(itemToUnlock?.data.id ? [itemToUnlock.data.id] : [])
+      ]));
+
+      const updatedUnlocks = {
+        count: isUnlimited ? (prevUnlocks.count || 0) : ((prevUnlocks.count || 0) + (typeof plan === 'number' ? plan : 0)),
+        isUnlimited: isUnlimited ? true : (prevUnlocks.isUnlimited || false),
+        unlimitedExpiresAt: isUnlimited ? expiryISO : (prevUnlocks.unlimitedExpiresAt || null),
+        unlockedIds: newUnlockedIds,
+      };
+
+      saveToLocalStorage('setmystay_user_data', {
+        ...allUserData,
+        defaultUser: {
+          ...currentUserData,
+          unlocks: updatedUnlocks,
+        }
+      });
+    } catch (e) {
+      console.error("Failed to save unlocks immediately:", e);
+    }
 
     const newPurchase: Purchase = { id: `purchase_${Date.now()}`, planName, amount, date: new Date() };
 
@@ -362,7 +413,7 @@ function Home() {
 
     toast({
       title: "Purchase Successful!",
-      description: plan === 'unlimited' ? "You now have unlimited unlocks for 30 days." : `You've added ${plan} unlocks.`,
+      description: isUnlimited ? "You now have unlimited unlocks for 30 days." : `You've added ${plan} unlocks.`,
       variant: "default",
     });
 
@@ -373,7 +424,7 @@ function Home() {
         } else {
             setRateUsModalOpen(true);
         }
-    }, 300);
+    }, 400);
   }, [toast, itemToUnlock]);
 
   const handleViewDetails = (item: AnyListing, type: 'listing' | 'roommate') => {
@@ -734,9 +785,9 @@ function Home() {
       </AlertDialog>
       <UnlockDetailsModal 
         isOpen={isUnlockModalOpen}
-        onClose={() => {
+        onClose={(proceedingToPayment?: boolean) => {
             setUnlockModalOpen(false);
-            if (itemToUnlock) {
+            if (!proceedingToPayment && itemToUnlock) {
                 setSelectedItem(itemToUnlock);
                 setItemToUnlock(null);
             }

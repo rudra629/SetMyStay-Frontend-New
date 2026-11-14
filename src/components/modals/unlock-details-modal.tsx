@@ -14,7 +14,7 @@ import { PaymentConfirmationModal } from "./payment-confirmation-modal";
 import axios from "axios";
 interface UnlockDetailsModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (proceedingToPayment?: boolean) => void;
   onPlanSelect: (plan: { plan: UnlockPlan, title: string, price: number }) => void;
   onNavigateToListProperty: () => void;
   pricing: PricingData | null;
@@ -58,18 +58,29 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
     const currentPlan = selectedPlan;
     if (!currentPlan) return;
 
-    // Close both modals immediately to release Radix UI pointer-event locks
+    // Close both modals immediately with proceedingToPayment=true so itemToUnlock is NOT re-opened behind Razorpay!
     setIsConfirmModalOpen(false);
-    onClose(); 
+    onClose(true); 
+
+    // Release any lingering Radix modal pointer-events lock on document body
+    if (typeof document !== 'undefined') {
+      document.body.style.pointerEvents = 'auto';
+      document.documentElement.style.pointerEvents = 'auto';
+    }
     
     toast({
       title: "Connecting to secure gateway...",
       description: "Please wait a moment.",
     });
 
-    // Wait 400ms for Radix UI animations/locks to clear before opening Razorpay
+    // Wait 350ms for Radix UI animations/locks to fully clear before opening Razorpay
     setTimeout(async () => {
       try {
+        if (typeof document !== 'undefined') {
+          document.body.style.pointerEvents = 'auto';
+          document.documentElement.style.pointerEvents = 'auto';
+        }
+
         // Uses `api` from @/lib/api so baseURL and Bearer token are automatically attached
         const { data } = await api.post('/payments/create-order/', {
           amount: finalAmount, 
@@ -86,51 +97,62 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
           description: currentPlan.title,
           order_id: data.order_id,
           handler: async function (response: any) {
-                    // 1. Save to localStorage purchase history immediately
-                    try {
-                        const existing = JSON.parse(localStorage.getItem('setmystay_purchase_history') || '[]');
-                        const newPurchase = {
-                            id: response.razorpay_payment_id || `pur_${Date.now()}`,
-                            plan: selectedPlan.title,
-                            plan_name: selectedPlan.title,
-                            date: new Date().toISOString(),
-                            created_at: new Date().toISOString(),
-                            amount: finalAmount,
-                        };
-                        localStorage.setItem('setmystay_purchase_history', JSON.stringify([newPurchase, ...existing]));
-                    } catch (e) {
-                        console.error(e);
-                    }
+            // 1. Save to localStorage purchase history immediately using currentPlan
+            try {
+              const existing = JSON.parse(localStorage.getItem('setmystay_purchase_history') || '[]');
+              const newPurchase = {
+                id: response.razorpay_payment_id || `pur_${Date.now()}`,
+                plan: currentPlan.title,
+                plan_name: currentPlan.title,
+                date: new Date().toISOString(),
+                created_at: new Date().toISOString(),
+                amount: finalAmount,
+              };
+              localStorage.setItem('setmystay_purchase_history', JSON.stringify([newPurchase, ...existing]));
+            } catch (e) {
+              console.error(e);
+            }
 
-                    // 2. Also notify backend
-                    try {
-                        await axios.post('/payments/verify-local/', {
-                            property_id: null,
-                            razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_order_id: response.razorpay_order_id,
-                            plan_name: selectedPlan.title,
-                            amount: finalAmount,
-                        });
-                    } catch (e) {
-                        console.warn("History sync warning:", e);
-                    }
+            // 2. Also notify backend
+            try {
+              await api.post('/payments/verify-local/', {
+                property_id: null,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                plan_name: currentPlan.title,
+                amount: finalAmount,
+              });
+            } catch (e) {
+              console.warn("History sync warning:", e);
+            }
 
-                    toast({
-                        title: "Payment Successful!",
-                        description: `Your ${selectedPlan.title} is now active!`,
-                        variant: "default",
-                    });
+            toast({
+              title: "Payment Successful!",
+              description: `Your ${currentPlan.title} is now active!`,
+              variant: "default",
+            });
 
-                    onPlanSelect({ plan: selectedPlan.plan, title: selectedPlan.title, price: finalAmount });
-                },
+            if (typeof document !== 'undefined') {
+              document.body.style.pointerEvents = 'auto';
+            }
+
+            // Pass currentPlan to onPlanSelect
+            onPlanSelect({ plan: currentPlan.plan, title: currentPlan.title, price: finalAmount });
+          },
           prefill: {
-            name: "SetMyStay User",
-            email: "user@setmystay.com",
+            name: (typeof localStorage !== 'undefined' && localStorage.getItem('user_name')) || "SetMyStay User",
+            email: (typeof localStorage !== 'undefined' && localStorage.getItem('user_email')) || "user@setmystay.com",
+            contact: (typeof localStorage !== 'undefined' && localStorage.getItem('user_phone')) || "",
           },
           theme: { color: '#2563eb' },
           modal: {
             ondismiss: function () {
               setSelectedPlan(null);
+              if (typeof document !== 'undefined') {
+                document.body.style.pointerEvents = 'auto';
+              }
+              // Payment was dismissed, restore the previous modal view
+              onClose(false);
             }
           }
         };
@@ -139,10 +161,14 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
         rzp.on('payment.failed', function (response: any) {
           toast({
             title: "Payment Failed",
-            description: response.error.description,
+            description: response.error?.description || "Payment could not be completed.",
             variant: "destructive",
           });
           setSelectedPlan(null);
+          if (typeof document !== 'undefined') {
+            document.body.style.pointerEvents = 'auto';
+          }
+          onClose(false);
         });
         rzp.open();
 
@@ -153,13 +179,17 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
           : "Could not initialize payment gateway. Check backend connection.";
         
         toast({
-          title: "Error",
+          title: "Payment Failed",
           description: errorMsg,
           variant: "destructive",
         });
         setSelectedPlan(null);
+        if (typeof document !== 'undefined') {
+          document.body.style.pointerEvents = 'auto';
+        }
+        onClose(false);
       }
-    }, 400); 
+    }, 350); 
   };
   
   return (
