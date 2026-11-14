@@ -100,12 +100,16 @@ export function ListPropertyPaymentModal({
 
             // 2. Verify payment & record in Purchase History on backend
             try {
+              const uEmail = (typeof window !== 'undefined' ? (localStorage.getItem('user_email') || userEmail) : userEmail) || '';
+              const uName = (typeof window !== 'undefined' ? (localStorage.getItem('user_name') || userName) : userName) || '';
               await api.post('/payments/verify-local/', {
                 property_id: propertyId || null,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
                 plan_name: 'Property Listing Fee',
                 amount: validAmount,
+                user_email: uEmail,
+                user_name: uName,
               });
             } catch (e) {
               console.warn("Verification warning:", e);

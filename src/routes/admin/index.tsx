@@ -921,23 +921,28 @@ function AdminDashboard() {
 
     // 👈 Group purchases by User for the Financials View
     const groupedPurchases = useMemo(() => {
-        const groups: { [email: string]: { name: string, email: string, plans: any[], totalSpend: number } } = {};
+        const groups: { [key: string]: { name: string, email: string, plans: any[], totalSpend: number } } = {};
 
         allPurchases.forEach(purchase => {
-            if (!groups[purchase.user_email]) {
-                groups[purchase.user_email] = {
-                    name: purchase.user_name || 'N/A',
-                    email: purchase.user_email,
+            const userEmail = (purchase.user_email || '').trim();
+            const userName = (purchase.user_name || '').trim();
+            const groupKey = userEmail ? userEmail.toLowerCase() : (userName ? userName.toLowerCase() : `purchase_${purchase.id || Math.random()}`);
+
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    name: userName || 'Customer',
+                    email: userEmail || 'Not Provided',
                     plans: [],
                     totalSpend: 0
                 };
             }
-            groups[purchase.user_email].plans.push({
-                plan: purchase.plan_name,
-                price: parseFloat(purchase.amount),
+            const price = parseFloat(purchase.amount) || 0;
+            groups[groupKey].plans.push({
+                plan: purchase.plan_name || 'Plan',
+                price: price,
                 date: purchase.created_at
             });
-            groups[purchase.user_email].totalSpend += parseFloat(purchase.amount);
+            groups[groupKey].totalSpend += price;
         });
 
         return Object.values(groups).sort((a, b) => b.totalSpend - a.totalSpend); // Sort by highest spend

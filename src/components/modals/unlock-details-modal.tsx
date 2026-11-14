@@ -115,12 +115,16 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
 
             // 2. Also notify backend
             try {
+              const uEmail = (typeof window !== 'undefined' ? (localStorage.getItem('user_email') || '') : '') || '';
+              const uName = (typeof window !== 'undefined' ? (localStorage.getItem('user_name') || '') : '') || '';
               await api.post('/payments/verify-local/', {
                 property_id: null,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
                 plan_name: currentPlan.title,
                 amount: finalAmount,
+                user_email: uEmail,
+                user_name: uName,
               });
             } catch (e) {
               console.warn("History sync warning:", e);

@@ -408,6 +408,34 @@ export const getAllPurchasesAdmin = async (): Promise<PurchaseRecord[]> => {
   return response.data.results ? response.data.results : response.data;
 };
 
+export const getUserUnlocks = async (email?: string): Promise<string[]> => {
+  try {
+    const userEmail = email || (typeof window !== 'undefined' ? (localStorage.getItem('user_email') || '') : '');
+    const url = userEmail ? `/payments/my-unlocks/?email=${encodeURIComponent(userEmail)}` : '/payments/my-unlocks/';
+    const response = await api.get(url);
+    return response.data?.unlocked_ids || [];
+  } catch (e) {
+    console.warn("Could not fetch remote unlocks:", e);
+    return [];
+  }
+};
+
+export const unlockListingApi = async (propertyId: string, email?: string, userName?: string): Promise<string[]> => {
+  try {
+    const userEmail = email || (typeof window !== 'undefined' ? (localStorage.getItem('user_email') || '') : '');
+    const name = userName || (typeof window !== 'undefined' ? (localStorage.getItem('user_name') || '') : '');
+    const response = await api.post('/payments/unlock-listing/', {
+      property_id: propertyId,
+      user_email: userEmail,
+      user_name: name,
+    });
+    return response.data?.unlocked_ids || [];
+  } catch (e) {
+    console.warn("Could not record remote unlock:", e);
+    return [];
+  }
+};
+
 export const getPricingConfig = async () => {
   const response = await api.get('/pricing/');
   return response.data;

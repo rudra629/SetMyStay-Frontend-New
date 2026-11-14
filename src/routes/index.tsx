@@ -14,11 +14,11 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { Listing, RoommateProfile, Page, ListingType, UnlockPlan, Bed, Advertisement, Coupon, Purchase, AnyListing, PricingData } from "@/lib/types";
 import { defaultPricing, dummyProperties, dummyRoommates } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { getProperties, getRoommates, toggleFavoriteProperty, getCoupons, getAdvertisements, createListing, listingToRoommateProfile } from "@/lib/api";
+import { getProperties, getRoommates, toggleFavoriteProperty, getCoupons, getAdvertisements, createListing, listingToRoommateProfile, getMyPurchases, getUserUnlocks, unlockListingApi } from "@/lib/api";
 
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -72,7 +72,17 @@ const defaultUserState = {
   likedItemIds: new Set<string>(),
 };
 
+function getUserStorageKey(): string {
+  if (typeof window === 'undefined') return 'guest';
+  const email = localStorage.getItem('user_email');
+  if (email && email.trim()) return email.trim().toLowerCase();
+  const name = localStorage.getItem('user_name');
+  if (name && name.trim()) return name.trim().toLowerCase();
+  return 'defaultUser';
+}
+
 function Home() {
+  const isLoggingOutRef = useRef(false);
   const [activePage, setActivePage] = useState<Page>("home");
   const [allListings, setAllListings] = useState<Listing[]>([]);
   const [allRoommates, setAllRoommates] = useState<RoommateProfile[]>([]);
@@ -175,6 +185,54 @@ function Home() {
               }, 6000);
           }
 
+          if (loggedInStatus) {
+            try {
+              const uEmail = (typeof localStorage !== 'undefined' ? localStorage.getItem('user_email') : '') || '';
+              const [serverPurchases, remoteUnlocks] = await Promise.all([
+                getMyPurchases().catch(() => []),
+                getUserUnlocks(uEmail).catch(() => []),
+              ]);
+
+              if (Array.isArray(serverPurchases) && serverPurchases.length > 0) {
+                setPurchaseHistory((curr) => {
+                  const merged = [...curr, ...serverPurchases];
+                  const dedupe = Array.from(new Map(merged.map((p: any) => [
+                    p.id || p.razorpay_payment_id || `${p.plan || p.plan_name}-${p.date || p.created_at}`,
+                    { ...p, date: new Date(p.date || p.created_at || Date.now()) }
+                  ])).values());
+
+                  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+                  const ult = dedupe.find((p: any) => {
+                    const n = (p.plan || p.plan_name || '').toLowerCase();
+                    return n.includes('ultimate') || n.includes('unlimited');
+                  });
+                  if (ult) {
+                    const pDate = new Date(ult.date).getTime();
+                    if (Date.now() - pDate < thirtyDays) {
+                      setUnlocks((u) => ({
+                        ...u,
+                        isUnlimited: true,
+                        unlimitedExpiresAt: new Date(pDate + thirtyDays).toISOString(),
+                      }));
+                    }
+                  }
+
+                  return dedupe;
+                });
+              }
+
+              if (Array.isArray(remoteUnlocks) && remoteUnlocks.length > 0) {
+                setUnlocks((curr) => {
+                  const mergedIds = new Set(curr.unlockedIds);
+                  remoteUnlocks.forEach((id) => mergedIds.add(String(id)));
+                  return { ...curr, unlockedIds: mergedIds };
+                });
+              }
+            } catch (err) {
+              console.warn("User data sync warning:", err);
+            }
+          }
+
         } catch (error) {
           console.error("Failed to load data", error);
         } finally {
@@ -188,8 +246,9 @@ function Home() {
         setPricing(getFromLocalStorage('pricing', defaultPricing));
       });
       
+      const userKey = getUserStorageKey();
       const allUserData: any = getFromLocalStorage('setmystay_user_data', {});
-      const userData = loggedInStatus ? (allUserData.defaultUser || defaultUserState) : defaultUserState;
+      const userData = loggedInStatus ? (allUserData[userKey] || allUserData.defaultUser || defaultUserState) : defaultUserState;
       
       let localHistory: any[] = [];
       try {
@@ -225,8 +284,23 @@ function Home() {
         }
       }
 
+      let count = userData.unlocks?.count || 0;
+      if (count === 0 && !isUnlimited) {
+        let totalPurchased = 0;
+        parsedHistory.forEach((p: any) => {
+          const name = (p.plan || p.plan_name || '').toLowerCase();
+          if (name.includes('10') || name.includes('pro')) totalPurchased += 10;
+          else if (name.includes('5') || name.includes('value')) totalPurchased += 5;
+          else if (name.includes('1') || name.includes('starter')) totalPurchased += 1;
+        });
+        const usedCount = (userData.unlocks?.unlockedIds || []).length;
+        if (totalPurchased > usedCount) {
+          count = totalPurchased - usedCount;
+        }
+      }
+
       setUnlocks({
-          count: userData.unlocks?.count || 0,
+          count: count,
           isUnlimited: isUnlimited,
           unlimitedExpiresAt: unlimitedExpiresAt,
           unlockedIds: new Set(userData.unlocks?.unlockedIds || []),
@@ -238,9 +312,13 @@ function Home() {
   }, [isClient]);
 
   const saveUserData = useCallback(() => {
+    if (isLoggingOutRef.current) return;
     if (isLoggedIn && isClient) {
+      const userKey = getUserStorageKey();
+      if (userKey === 'guest') return;
+
       const allUserData: any = getFromLocalStorage('setmystay_user_data', {});
-      const currentUserData = allUserData.defaultUser || {};
+      const currentUserData = allUserData[userKey] || allUserData.defaultUser || {};
       const isUnlimitedActive = unlocks.isUnlimited && (!unlocks.unlimitedExpiresAt || new Date(unlocks.unlimitedExpiresAt).getTime() > Date.now());
       const updatedData = { 
         ...currentUserData, 
@@ -253,7 +331,11 @@ function Home() {
         purchaseHistory: purchaseHistory,
         likedItemIds: Array.from(likedItemIds),
       };
-      saveToLocalStorage('setmystay_user_data', { defaultUser: updatedData });
+      saveToLocalStorage('setmystay_user_data', { 
+        ...allUserData, 
+        [userKey]: updatedData,
+        defaultUser: updatedData 
+      });
     }
   }, [isLoggedIn, isClient, unlocks, purchaseHistory, likedItemIds]);
 
@@ -367,14 +449,16 @@ function Home() {
       // If user was unlocking an item, auto-unlock it immediately!
       if (itemToUnlock?.data.id) {
         newUnlocksState.unlockedIds = new Set(newUnlocksState.unlockedIds).add(itemToUnlock.data.id);
+        unlockListingApi(String(itemToUnlock.data.id)).catch(() => {});
       }
       return newUnlocksState;
     });
 
-    // Save directly to localStorage immediately so it persists and is live across the app
+    // Save directly to user-keyed localStorage immediately so it persists across sessions
     try {
+      const userKey = getUserStorageKey();
       const allUserData: any = getFromLocalStorage('setmystay_user_data', {});
-      const currentUserData = allUserData.defaultUser || {};
+      const currentUserData = allUserData[userKey] || allUserData.defaultUser || {};
       const prevUnlocks = currentUserData.unlocks || {};
       const newUnlockedIds = Array.from(new Set([
         ...(prevUnlocks.unlockedIds || []),
@@ -390,6 +474,10 @@ function Home() {
 
       saveToLocalStorage('setmystay_user_data', {
         ...allUserData,
+        [userKey]: {
+          ...currentUserData,
+          unlocks: updatedUnlocks,
+        },
         defaultUser: {
           ...currentUserData,
           unlocks: updatedUnlocks,
@@ -434,6 +522,7 @@ function Home() {
   const handleConfirmUnlock = () => {
     if (selectedItem?.data.id) {
       if (useUnlock(selectedItem.data.id)) {
+        unlockListingApi(String(selectedItem.data.id)).catch(() => {});
         handleViewDetails(selectedItem.data, selectedItem.type);
       }
     }
@@ -593,6 +682,7 @@ function Home() {
   };
 
   const handleLogout = () => {
+    isLoggingOutRef.current = true;
     setIsLoggedIn(false);
     saveToLocalStorage('setmystay_isLoggedIn', false);
     localStorage.removeItem('access_token');

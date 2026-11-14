@@ -62,6 +62,13 @@ function ListPropertyPage() {
 
       const payload = new FormData();
 
+      const uEmail = (typeof localStorage !== 'undefined' && localStorage.getItem('user_email')) || '';
+      const uName = (typeof localStorage !== 'undefined' && localStorage.getItem('user_name')) || '';
+      if (uEmail) {
+        payload.append("user_email", uEmail);
+        payload.append("email", uEmail);
+      }
+
       // --- BASIC FIELDS ---
       payload.append("title", formData.title);
       payload.append("description", formData.description || "No description provided");
@@ -196,6 +203,8 @@ function ListPropertyPage() {
         onClose={() => setIsPaymentModalOpen(false)}
         onProceedToPayment={handlePaymentSuccess}
         amount={listingAmount}
+        userEmail={(typeof localStorage !== 'undefined' && localStorage.getItem('user_email')) || ''}
+        userName={(typeof localStorage !== 'undefined' && localStorage.getItem('user_name')) || ''}
         pricing={null}
       />
     </main>

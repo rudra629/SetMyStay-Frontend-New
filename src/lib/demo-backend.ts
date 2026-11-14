@@ -232,6 +232,19 @@ function handle(method: string, url: string, body: Record<string, any>): [number
   }
   if (p === "/payments/my-history/") return [200, d.purchases.filter((x) => x.user_name === "Demo User" || x.user_name === localStorage.getItem("user_name"))];
   if (p === "/payments/all-history/") return [200, d.purchases];
+  if (p.startsWith("/payments/my-unlocks")) {
+    const raw = localStorage.getItem("setmystay_demo_unlocks");
+    return [200, { unlocked_ids: raw ? JSON.parse(raw) : [] }];
+  }
+  if (p === "/payments/unlock-listing/") {
+    const raw = localStorage.getItem("setmystay_demo_unlocks");
+    const arr = raw ? JSON.parse(raw) : [];
+    if (body.property_id && !arr.includes(String(body.property_id))) {
+      arr.push(String(body.property_id));
+      localStorage.setItem("setmystay_demo_unlocks", JSON.stringify(arr));
+    }
+    return [200, { status: "success", unlocked_ids: arr }];
+  }
   if (p === "/auth/verify-admin/") {
     if (localStorage.getItem("admin_authenticated") === "true") {
       return [200, { status: "ok", is_staff: true, is_superuser: true }];
