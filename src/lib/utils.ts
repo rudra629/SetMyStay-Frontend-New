@@ -26,3 +26,19 @@ export function getFirstImageUrl(images?: string[]): string | undefined {
   if (!images || images.length === 0) return undefined;
   return images.find((img) => !isVideoUrl(img)) || images[0];
 }
+
+/**
+ * Turns any Indian phone format ("+91 79771 69550", "09423421979", "7977169550")
+ * into the digits-only form WhatsApp links need ("917977169550").
+ */
+export function whatsappNumber(phone: string | null | undefined): string {
+  let d = String(phone || "").replace(/\D/g, "");
+  if (d.length === 11 && d.startsWith("0")) d = d.slice(1);
+  if (d.length === 10) d = "91" + d;
+  return d;
+}
+
+export function whatsappLink(phone: string | null | undefined, message?: string): string {
+  const n = whatsappNumber(phone);
+  return `https://wa.me/${n}${message ? `?text=${encodeURIComponent(message)}` : ""}`;
+}

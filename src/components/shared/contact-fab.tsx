@@ -1,24 +1,32 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Plus, X, Mail, MessageCircle } from 'lucide-react';
 import { Link } from "@tanstack/react-router";
-import { cn } from '@/lib/utils';
+import { cn, whatsappLink } from '@/lib/utils';
 
 export function ContactFab() {
     const [isOpen, setIsOpen] = useState(false);
 
-    const emailAddress = "setmystay02@gmail.com";
-    const whatsappNumber = "+91 79771 69550";
+    // Defaults; replaced by the contact details the admin saved (Admin > Contact Information)
+    const [emailAddress, setEmailAddress] = useState("setmystay02@gmail.com");
+    const [phone, setPhone] = useState("+91 79771 69550");
+    useEffect(() => {
+        api.get('/site-contact/').then(({ data }) => {
+            if (data?.email) setEmailAddress(data.email);
+            if (data?.phone) setPhone(data.phone);
+        }).catch(() => {});
+    }, []);
     const whatsappMessage = "Hello, I have a question about SetMyStay.";
 
     return (
         <div className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-50">
             <div className="relative flex flex-col items-center gap-2">
                 <a
-                    href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`}
+                    href={whatsappLink(phone, whatsappMessage)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(

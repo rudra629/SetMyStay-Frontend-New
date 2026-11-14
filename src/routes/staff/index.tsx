@@ -31,7 +31,7 @@ import { format } from 'date-fns';
 import { UserProfilesTable } from '@/components/admin/user-profiles-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Listing, RoommateProfile, AnyListing } from '@/lib/types';
-import { isVideoUrl } from '@/lib/utils';
+import { isVideoUrl, whatsappLink } from '@/lib/utils';
 
 import api, { getAdminProperties, updatePropertyStatus, updateRoommateStatus, deleteProperty, deleteRoommate, listingToRoommateProfile } from '@/lib/api';
 
@@ -437,7 +437,7 @@ function StaffDashboard() {
                                 {currentItem.contactPhonePrimary && currentItem.contactPhonePrimary !== 'Hidden' && (
                                     <div className="md:col-span-2 flex justify-start space-x-2 pt-2 pb-4">
                                         <Button variant="outline" asChild className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:text-green-800">
-                                            <a href={`https://wa.me/${currentItem.contactPhonePrimary.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">
+                                            <a href={whatsappLink(currentItem.contactPhonePrimary)} target="_blank" rel="noopener noreferrer">
                                                 Chat on WhatsApp
                                             </a>
                                         </Button>

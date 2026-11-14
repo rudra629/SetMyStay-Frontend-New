@@ -49,7 +49,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, startOfWeek, addDays, getWeek, formatDistanceToNow, differenceInHours } from 'date-fns';
-import { cn, isVideoUrl } from '@/lib/utils';
+import { cn, isVideoUrl, whatsappLink } from '@/lib/utils';
 import { getFromLocalStorage, saveToLocalStorage } from '@/lib/storage';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ThemeCustomizer, DemoDataCard } from '@/components/admin/theme-customizer';
@@ -1591,10 +1591,7 @@ function AdminDashboard() {
                                                         <Label htmlFor="slot-cooldown" className="w-28">Slot Timeout (Hours)</Label>
                                                         <Input id="slot-cooldown" type="number" min={1} value={slotCooldownHours} onChange={(e) => setSlotCooldownHours(parseInt(e.target.value) || 24)} className="max-w-xs" />
                                                     </div>
-                                                    <div className="flex items-center gap-4 mt-3">
-                                                        <Label htmlFor="swipe-reset" className="w-28">Swipes reset after (Hours)</Label>
-                                                        <Input id="swipe-reset" type="number" min={1} value={swipeResetHours} onChange={(e) => setSwipeResetHours(parseInt(e.target.value) || 24)} className="max-w-xs" />
-                                                    </div>
+                                                    <p className="mt-3 text-sm text-muted-foreground">Swipes reset to this number for every user at 12:00 AM (India time) every day.</p>
                                                 </div>
                                             </div>
                                         )}
@@ -2036,7 +2033,7 @@ function AdminDashboard() {
                                 {currentItem.contactPhonePrimary && !currentItem.contactPhonePrimary.includes('Hidden') && (
                                     <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 pt-2">
                                         <Button className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white shadow-sm" asChild>
-                                            <a href={`https://wa.me/${currentItem.contactPhonePrimary.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">
+                                            <a href={whatsappLink(currentItem.contactPhonePrimary)} target="_blank" rel="noopener noreferrer">
                                                 Chat on WhatsApp
                                             </a>
                                         </Button>

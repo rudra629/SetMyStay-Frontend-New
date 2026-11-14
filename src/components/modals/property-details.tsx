@@ -6,7 +6,7 @@ import { DetailsModalWrapper } from './details-modal-wrapper';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, IndianRupee, Home, BedDouble, ChevronLeft, ChevronRight, Lock, MessageSquare, Phone, Clock, User } from 'lucide-react';
-import { cn, isVideoUrl } from '@/lib/utils';
+import { cn, isVideoUrl, whatsappLink } from '@/lib/utils';
 
 interface PropertyDetailsProps {
   listing: Listing | null;
@@ -298,7 +298,7 @@ export function PropertyDetails({ listing, onClose, isUnlocked, onUnlock, onChat
                 {isUnlocked && listing.contactPhonePrimary && !listing.contactPhonePrimary.includes('Hidden') ? (
                     <>
                         <Button size="lg" className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white shadow-sm" asChild>
-                            <a href={`https://wa.me/${listing.contactPhonePrimary.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">
+                            <a href={whatsappLink(listing.contactPhonePrimary)} target="_blank" rel="noopener noreferrer">
                                 <MessageSquare className="w-5 h-5 mr-2" /> Chat on WhatsApp
                             </a>
                         </Button>

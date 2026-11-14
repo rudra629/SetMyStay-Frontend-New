@@ -20,10 +20,19 @@ export function SwipeDeck({ items, likedItemIds, onToggleLike, onViewDetails, cl
   const [lastAction, setLastAction] = useState<"like" | "pass" | null>(null);
   const [trigger, setTrigger] = useState<{ dir: 1 | -1; n: number } | null>(null);
 
-  const [left, setLeft] = useState(25);
+  // null = still loading the real count (never show a made-up number)
+  const [left, setLeft] = useState<number | null>(null);
   const [resetsAt, setResetsAt] = useState<string | null>(null);
   useEffect(() => {
-    fetchSwipeState().then((s) => { setLeft(s.left); setResetsAt(s.resetsAt); });
+    let alive = true;
+    const load = () => fetchSwipeState()
+      .then((s) => { if (alive) { setLeft(s.left); setResetsAt(s.resetsAt); } })
+      .catch(() => { /* keep showing the last known number */ });
+    load();
+    // Refresh when the user comes back to the tab (e.g. after midnight, or another device)
+    const onVisible = () => { if (document.visibilityState === "visible") load(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { alive = false; document.removeEventListener("visibilitychange", onVisible); };
   }, []);
   useEffect(() => { setIndex(0); }, [items.length]);
 
@@ -32,12 +41,12 @@ export function SwipeDeck({ items, likedItemIds, onToggleLike, onViewDetails, cl
     setLastAction(dir === 1 ? "like" : "pass");
     setIndex((i) => i + 1);
     setTrigger(null);
-    setLeft((l) => Math.max(0, l - 1)); // instant feedback, then take the server's number
+    setLeft((l) => (l === null ? l : Math.max(0, l - 1))); // instant feedback, then take the server's number
     recordSwipe().then((s) => { setLeft(s.left); setResetsAt(s.resetsAt); });
   };
 
   const visible = items.slice(index, index + 3);
-  const outOfSwipes = left <= 0;
+  const outOfSwipes = left !== null && left <= 0;
   const done = index >= items.length || outOfSwipes;
 
   return (
@@ -62,12 +71,12 @@ export function SwipeDeck({ items, likedItemIds, onToggleLike, onViewDetails, cl
             <p className="text-sm text-muted-foreground">Your liked roommates are saved under Liked Properties.</p>
             {resetsAt && (
               <p className="text-sm font-medium text-primary">
-                New swipes {(() => {
+                New swipes at 12:00 AM ({(() => {
                   const ms = new Date(resetsAt).getTime() - Date.now();
                   if (ms <= 60_000) return "in a moment";
                   const h = Math.floor(ms / 3_600_000), m = Math.floor((ms % 3_600_000) / 60_000);
                   return `in ${h > 0 ? `${h} hr ` : ""}${m} min`;
-                })()}
+                })()})
               </p>
             )}
           </div>
@@ -94,7 +103,7 @@ export function SwipeDeck({ items, likedItemIds, onToggleLike, onViewDetails, cl
         <SwipeButton label="Like" disabled={done} onClick={() => setTrigger({ dir: 1, n: Date.now() })} variant="like"><Heart className="h-7 w-7 fill-current" /></SwipeButton>
       </div>
       <p className="mt-4 h-5 text-xs uppercase tracking-[0.25em] text-muted-foreground">
-        {outOfSwipes ? "No swipes left" : `${left} swipes left`}
+        {left === null ? "Loading swipes…" : outOfSwipes ? "No swipes left" : `${left} swipes left`}
       </p>
     </div>
   );

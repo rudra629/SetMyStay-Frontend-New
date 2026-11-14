@@ -85,27 +85,47 @@ export function feeFor(type: string | undefined | null): number {
 export type SwipeState = { limit: number; used: number; left: number; resetsAt: string | null };
 
 const GUEST_SWIPES_KEY = "setmystay_guest_swipes";
-function guestState(): { count: number; start: number } {
-  const hours = loadSettings().swipeResetHours;
+
+/** Today's date in India (YYYY-MM-DD). Swipes reset at 12:00 AM IST every day. */
+function istDay(d = new Date()): string {
+  return new Date(d.getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+}
+/** The next 12:00 AM IST as an ISO time. */
+export function nextIstMidnight(d = new Date()): string {
+  const ist = new Date(d.getTime() + 5.5 * 3600 * 1000);
+  const nextUtcMidnightOfIstDay = Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate() + 1);
+  return new Date(nextUtcMidnightOfIstDay - 5.5 * 3600 * 1000).toISOString();
+}
+
+function guestState(): { count: number; day: string } {
   try {
     const s = JSON.parse(localStorage.getItem(GUEST_SWIPES_KEY) || "null");
-    if (s && Date.now() - s.start < hours * 3600 * 1000) return s;
+    if (s && s.day === istDay()) return s;
   } catch { /* ignore */ }
-  return { count: 0, start: Date.now() };
+  return { count: 0, day: istDay() };
 }
-function toState(count: number, start: number): SwipeState {
-  const { swipeLimit, swipeResetHours } = loadSettings();
-  return { limit: swipeLimit, used: count, left: Math.max(0, swipeLimit - count), resetsAt: new Date(start + swipeResetHours * 3600 * 1000).toISOString() };
+function guestToState(count: number): SwipeState {
+  const { swipeLimit } = loadSettings();
+  return { limit: swipeLimit, used: count, left: Math.max(0, swipeLimit - count), resetsAt: nextIstMidnight() };
 }
 const isLoggedIn = () => typeof localStorage !== "undefined" && !!localStorage.getItem("access_token");
 const fromServer = (d: any): SwipeState => ({ limit: d.limit, used: d.used, left: d.left, resetsAt: d.resets_at || null });
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Logged-in users: the count always comes from the server (retries if the server is
+ * waking up). It never falls back to the guest count, which caused "25" after login.
+ */
 export async function fetchSwipeState(): Promise<SwipeState> {
   if (isLoggedIn()) {
-    try { const { data } = await api.get("/swipes/"); return fromServer(data); } catch { /* fall back to guest */ }
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try { const { data } = await api.get("/swipes/"); return fromServer(data); }
+      catch (e) { lastError = e; await wait(1500 * (attempt + 1)); }
+    }
+    throw lastError;
   }
-  const g = guestState();
-  return toState(g.count, g.start);
+  return guestToState(guestState().count);
 }
 
 export async function recordSwipe(): Promise<SwipeState> {
@@ -115,12 +135,13 @@ export async function recordSwipe(): Promise<SwipeState> {
       return fromServer(data);
     } catch (e: any) {
       if (e?.response?.status === 429 && e.response.data) return fromServer(e.response.data);
+      return fetchSwipeState(); // network hiccup: ask the server for the real number
     }
   }
   const g = guestState();
   g.count += 1;
   try { localStorage.setItem(GUEST_SWIPES_KEY, JSON.stringify(g)); } catch { /* ignore */ }
-  return toState(g.count, g.start);
+  return guestToState(g.count);
 }
 
 // Old per-browser counter is no longer used
