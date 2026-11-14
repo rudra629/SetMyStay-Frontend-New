@@ -63,7 +63,7 @@ const DEFAULT_ADMIN_OTP = '';
 const DEFAULT_ADMIN_QUESTION = '';
 const DEFAULT_ADMIN_ANSWER = '';
 const DEFAULT_ADMIN_EMAIL = 'setmystay02@gmail.com';
-const DEFAULT_ADMIN_PHONE = '++91 79771 69550';
+const DEFAULT_ADMIN_PHONE = '+91 79771 69550';
 const DEFAULT_ADMIN_ADDRESS = 'Office no. 01, Neelsidhi Splendour, Sector 15, CBD Belapur, Navi Mumbai, Maharashtra 400614';
 
 // Chart data generation functions
@@ -279,8 +279,7 @@ const ContactInfoChangeForm = ({ currentEmail, currentPhone, currentAddress, onS
             toast({ title: 'Error', description: 'All fields are required.', variant: 'destructive' });
             return;
         }
-        onSave(info);
-        toast({ title: 'Success!', description: 'Your contact information has been updated.' });
+        onSave(info); // the save handler shows success or the server's error
         onClose();
     };
 
@@ -851,9 +850,14 @@ function AdminDashboard() {
             setAdminOtp(getFromLocalStorage('admin_otp', DEFAULT_ADMIN_OTP));
             setAdminQuestion(getFromLocalStorage('admin_question', DEFAULT_ADMIN_QUESTION));
             setAdminAnswer(getFromLocalStorage('admin_answer', DEFAULT_ADMIN_ANSWER));
-            setAdminEmail(getFromLocalStorage('admin_email', DEFAULT_ADMIN_EMAIL));
-            setAdminPhone(getFromLocalStorage('admin_phone', DEFAULT_ADMIN_PHONE));
-            setAdminAddress(getFromLocalStorage('admin_address', DEFAULT_ADMIN_ADDRESS));
+            setAdminEmail(DEFAULT_ADMIN_EMAIL);
+            setAdminPhone(DEFAULT_ADMIN_PHONE);
+            setAdminAddress(DEFAULT_ADMIN_ADDRESS);
+            api.get('/site-contact/').then(({ data }) => {
+                if (data?.email) setAdminEmail(data.email);
+                if (data?.phone) setAdminPhone(data.phone);
+                if (data?.address) setAdminAddress(data.address);
+            }).catch(() => {});
 
             setSelectedDate(new Date());
 
@@ -1275,13 +1279,17 @@ function AdminDashboard() {
         setVendorDetailsModalOpen(true);
     };
 
-    const handleSaveContactInfo = (info: { email: string, phone: string, address: string }) => {
-        saveToLocalStorage('admin_email', info.email);
-        saveToLocalStorage('admin_phone', info.phone);
-        saveToLocalStorage('admin_address', info.address);
-        setAdminEmail(info.email);
-        setAdminPhone(info.phone);
-        setAdminAddress(info.address);
+    const handleSaveContactInfo = async (info: { email: string, phone: string, address: string }) => {
+        try {
+            // Saved on the server so the footer shows it to every visitor
+            const { data } = await api.post('/site-contact/', info);
+            setAdminEmail(data.email);
+            setAdminPhone(data.phone);
+            setAdminAddress(data.address);
+            toast({ title: 'Contact info saved', description: 'The website footer now shows the new details.' });
+        } catch (e: any) {
+            toast({ title: 'Not saved', description: e?.response?.data?.error || 'Could not reach the server.', variant: 'destructive' });
+        }
     };
 
     const StatusBadge = ({ status }: { status?: 'pending' | 'approved' | 'rejected' | boolean }) => {

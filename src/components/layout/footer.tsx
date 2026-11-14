@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { Page } from "@/lib/types";
-import { getFromLocalStorage } from "@/lib/storage";
+import api from "@/lib/api";
 
 
 // Default contact info for the very first run or if not set
@@ -31,9 +31,12 @@ export function Footer({ onNavigate, onOpenPolicy }: FooterProps) {
 
   useEffect(() => {
     setIsMounted(true);
-    setContactEmail(getFromLocalStorage('admin_email', DEFAULT_ADMIN_EMAIL));
-    setContactPhone(getFromLocalStorage('admin_phone', DEFAULT_ADMIN_PHONE));
-    setContactAddress(getFromLocalStorage('admin_address', DEFAULT_ADMIN_ADDRESS));
+    // Contact details set by the admin are stored on the server, so every visitor sees them
+    api.get('/site-contact/').then(({ data }) => {
+      if (data?.email) setContactEmail(data.email);
+      if (data?.phone) setContactPhone(data.phone);
+      if (data?.address) setContactAddress(data.address);
+    }).catch(() => { /* keep defaults */ });
   }, []);
 
 
