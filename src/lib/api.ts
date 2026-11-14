@@ -32,9 +32,10 @@ api.interceptors.request.use(
 
 // --- ADAPTERS ---
 const adaptPropertyToListing = (data: any): Listing => {
+  const rawType = (data.property_type || '').toUpperCase();
   let mappedType = 'PG';
-  if (data.property_type === 'RENTAL') mappedType = 'Rental';
-  if (data.property_type === 'ROOMMATE') mappedType = 'Roommate';
+  if (rawType === 'RENTAL') mappedType = 'Rental';
+  if (rawType === 'ROOMMATE') mappedType = 'Roommate';
 
   const rawImages = Array.isArray(data.images) ? data.images : [];
   const videoObj = rawImages.find((img: any) => typeof img === 'object' && img?.is_video);

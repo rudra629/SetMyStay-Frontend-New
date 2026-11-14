@@ -176,14 +176,6 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
                 Choose a plan that's right for you.
               </DialogDescription>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute right-4 top-4 rounded-full p-2 text-muted-foreground hover:text-foreground bg-muted/70 hover:bg-muted transition-colors cursor-pointer z-30"
-              aria-label="Close dialog"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </DialogHeader>
 
           <Tabs defaultValue="unlock" className="w-full flex flex-col flex-1 min-h-0">

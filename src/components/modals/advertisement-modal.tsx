@@ -20,14 +20,6 @@ export function AdvertisementModal({ isOpen, onClose, title, description, imageU
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[calc(100%-2.5rem)] max-w-sm sm:max-w-[420px] p-0 overflow-hidden gap-0 border-0 rounded-2xl sm:rounded-3xl my-auto shadow-2xl relative">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-3 top-3 z-30 rounded-full bg-black/60 hover:bg-black/80 p-2 text-white backdrop-blur-sm transition-colors cursor-pointer"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
         {imageUrl && (
           <div className="relative h-52 w-full">
             <img 

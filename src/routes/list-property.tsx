@@ -35,6 +35,17 @@ function ListPropertyPage() {
     fetchAndCachePricing().catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (isSubmitting) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isSubmitting]);
+
   // 1. When Form is Valid, Open Payment Modal with the exact price for this property type
   const handleFormSubmit = (data: any) => {
     setFormData(data);
@@ -161,14 +172,13 @@ function ListPropertyPage() {
   return (
     <main className="min-h-screen bg-background relative">
       {isSubmitting && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/75 backdrop-blur-sm text-white p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 rounded-full border-4 border-blue-500 border-t-transparent animate-spin" />
-            <h3 className="text-xl font-bold">Submitting Your Listing</h3>
-            <p className="text-slate-300 text-sm">
-              Payment confirmed! We are securely uploading your photos, videos, and documents to Cloudinary. Please wait a moment...
-            </p>
-          </div>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm touch-none select-none cursor-wait"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onWheel={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onTouchMove={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        >
+          <div className="w-12 h-12 rounded-full border-4 border-white/20 border-t-white animate-spin" />
         </div>
       )}
 

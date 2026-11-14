@@ -16,9 +16,9 @@ export const Route = createFileRoute("/")({
 
 import React, { useState, useEffect, useCallback } from "react";
 import type { Listing, RoommateProfile, Page, ListingType, UnlockPlan, Bed, Advertisement, Coupon, Purchase, AnyListing, PricingData } from "@/lib/types";
-import { defaultPricing } from "@/lib/data";
+import { defaultPricing, dummyProperties, dummyRoommates } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { getProperties, toggleFavoriteProperty, getCoupons, getAdvertisements, createListing, listingToRoommateProfile } from "@/lib/api";
+import { getProperties, getRoommates, toggleFavoriteProperty, getCoupons, getAdvertisements, createListing, listingToRoommateProfile } from "@/lib/api";
 
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -130,20 +130,33 @@ function Home() {
       const fetchData = async () => {
         setIsLoading(true);
         try {
-          const allData = await getProperties();
+          const [allData, directRoommates] = await Promise.all([
+            getProperties(),
+            getRoommates().catch(() => []),
+          ]);
 
-          const realProperties = allData.filter(p => (p.propertyType as string) !== 'Roommate');
-          const rawRoommates = allData.filter(p => (p.propertyType as string) === 'Roommate');
+          const realProperties = allData.filter(p => (p.propertyType as string)?.toLowerCase() !== 'roommate');
+          const rawRoommates = allData.filter(p => (p.propertyType as string)?.toLowerCase() === 'roommate');
 
-          const realRoommates: RoommateProfile[] = rawRoommates.map(listingToRoommateProfile);
+          const realRoommatesFromProps = rawRoommates.map(listingToRoommateProfile);
+          const combinedMatesMap = new Map<string, RoommateProfile>();
+          [...realRoommatesFromProps, ...directRoommates].forEach(r => {
+            if (r && r.id) combinedMatesMap.set(String(r.id), r);
+          });
+          let realRoommates = Array.from(combinedMatesMap.values());
+          if (realRoommates.length === 0) {
+            realRoommates = dummyRoommates;
+          }
 
-          setAllListings(realProperties);
+          setAllListings(realProperties.length > 0 ? realProperties : dummyProperties);
           setAllRoommates(realRoommates);
 
-          const shuffledListings = [...realProperties].sort(() => 0.5 - Math.random());
+          const shuffledListings = [...(realProperties.length > 0 ? realProperties : dummyProperties)].sort(() => 0.5 - Math.random());
           const shuffledRoommates = [...realRoommates].sort(() => 0.5 - Math.random());
           setFeaturedProperties(shuffledListings.slice(0, 3));
-          setFeaturedRoommates(shuffledRoommates.filter(r => r.hasProperty).slice(0, 3));
+
+          const withProp = shuffledRoommates.filter(r => r.hasProperty);
+          setFeaturedRoommates(withProp.length > 0 ? withProp.slice(0, 6) : shuffledRoommates.slice(0, 6));
 
           const liveCoupons = await getCoupons();
           setActiveCoupons(liveCoupons);
@@ -641,7 +654,8 @@ function Home() {
         {activePage === 'home' && (
           <HomeSection 
             featuredProperties={featuredProperties} 
-            featuredRoommates={featuredRoommates.filter(r => r.hasProperty)} 
+            featuredRoommates={featuredRoommates} 
+            allRoommates={allRoommates}
             onViewDetails={handleViewDetails}
             onNavigate={handleNavigationWithAuth}
             likedItemIds={likedItemIds}

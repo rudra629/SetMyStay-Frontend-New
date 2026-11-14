@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform } from "motion/react";
 import { useLiteMode } from "@/lib/perf";
 import { ArrowRight, ArrowUpRight, BedDouble, Building2, Users, ShieldCheck, Search, KeyRound, ChevronDown } from "lucide-react";
 import type { Listing, RoommateProfile, Page } from "@/lib/types";
+import { dummyRoommates } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { PropertyCard } from "@/components/shared/property-card";
 import { RoommateCard } from "@/components/shared/roommate-card";
@@ -13,6 +14,7 @@ import heroVideoUrl from "@/assets/hero-building.mp4";
 interface HomeSectionProps {
   featuredProperties: Listing[];
   featuredRoommates: RoommateProfile[];
+  allRoommates?: RoommateProfile[];
   onViewDetails: (item: Listing | RoommateProfile, type: "listing" | "roommate") => void;
   onNavigate: (page: Page) => void;
   likedItemIds: Set<string>;
@@ -33,7 +35,19 @@ const steps = [
 ];
 
 
-export function HomeSection({ featuredProperties, featuredRoommates, onViewDetails, onNavigate, likedItemIds, onToggleLike, unlockedIds }: HomeSectionProps) {
+export function HomeSection({ 
+  featuredProperties, 
+  featuredRoommates, 
+  allRoommates = [],
+  onViewDetails, 
+  onNavigate, 
+  likedItemIds, 
+  onToggleLike, 
+  unlockedIds 
+}: HomeSectionProps) {
+  const swipeDeckItems = allRoommates.length > 0 
+    ? allRoommates 
+    : (featuredRoommates.length > 0 ? featuredRoommates : dummyRoommates);
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const videoScale = useTransform(scrollYProgress, [0, 1], [1, 1.25]);
@@ -117,8 +131,8 @@ export function HomeSection({ featuredProperties, featuredRoommates, onViewDetai
             <h2 className="mt-4 font-display text-3xl sm:text-4xl font-semibold leading-tight">Find someone to share with.</h2>
             <p className="mt-6 max-w-md text-ink-foreground/70">Swipe right on roommates you'd like to live with, left to skip.</p>          </Reveal>
           <Reveal delay={0.15} className="text-foreground">
-            {featuredRoommates.length > 0 ? (
-              <SwipeDeck items={featuredRoommates}
+            {swipeDeckItems.length > 0 ? (
+              <SwipeDeck items={swipeDeckItems}
                 likedItemIds={likedItemIds} onToggleLike={onToggleLike} onViewDetails={onViewDetails} className="[&_p.mt-4]:text-ink-foreground/60" />
             ) : (
               <div className="mx-auto grid h-[520px] max-w-[380px] place-items-center rounded-[2rem] glass text-ink-foreground/70 text-center p-8">New listings are on their way.</div>
