@@ -45,8 +45,29 @@ import { HistoryModal } from "@/components/modals/history-modal";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { getFromLocalStorage, saveToLocalStorage } from "@/lib/storage";
 
+function getSubscriptionRemainingText(expiresAt?: string | null): string {
+  if (!expiresAt) return "30 days";
+  const diffMs = new Date(expiresAt).getTime() - Date.now();
+  if (diffMs <= 0) return "0 days (expired)";
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  if (diffDays > 0) {
+    return `${diffDays} day${diffDays === 1 ? '' : 's'}${diffHours > 0 ? ` and ${diffHours} hr${diffHours === 1 ? '' : 's'}` : ''}`;
+  }
+  const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  if (diffHours > 0) {
+    return `${diffHours} hr${diffHours === 1 ? '' : 's'} ${diffMinutes} min`;
+  }
+  return `${Math.max(1, diffMinutes)} min`;
+}
+
 const defaultUserState = {
-  unlocks: { count: 0, isUnlimited: false, unlockedIds: new Set<string>() },
+  unlocks: { 
+    count: 0, 
+    isUnlimited: false, 
+    unlimitedExpiresAt: null as string | null,
+    unlockedIds: new Set<string>() 
+  },
   purchaseHistory: [] as Purchase[],
   likedItemIds: new Set<string>(),
 };
@@ -157,9 +178,19 @@ function Home() {
       const allUserData: any = getFromLocalStorage('setmystay_user_data', {});
       const userData = loggedInStatus ? (allUserData.defaultUser || defaultUserState) : defaultUserState;
       
+      let isUnlimited = userData.unlocks?.isUnlimited || false;
+      let unlimitedExpiresAt = userData.unlocks?.unlimitedExpiresAt || null;
+      if (isUnlimited && unlimitedExpiresAt) {
+        if (new Date(unlimitedExpiresAt).getTime() <= Date.now()) {
+          isUnlimited = false;
+          unlimitedExpiresAt = null;
+        }
+      }
+
       setUnlocks({
           count: userData.unlocks?.count || 0,
-          isUnlimited: userData.unlocks?.isUnlimited || false,
+          isUnlimited: isUnlimited,
+          unlimitedExpiresAt: unlimitedExpiresAt,
           unlockedIds: new Set(userData.unlocks?.unlockedIds || []),
       });
 
@@ -181,11 +212,13 @@ function Home() {
     if (isLoggedIn && isClient) {
       const allUserData: any = getFromLocalStorage('setmystay_user_data', {});
       const currentUserData = allUserData.defaultUser || {};
+      const isUnlimitedActive = unlocks.isUnlimited && (!unlocks.unlimitedExpiresAt || new Date(unlocks.unlimitedExpiresAt).getTime() > Date.now());
       const updatedData = { 
         ...currentUserData, 
         unlocks: {
             count: unlocks.count,
-            isUnlimited: unlocks.isUnlimited,
+            isUnlimited: isUnlimitedActive,
+            unlimitedExpiresAt: isUnlimitedActive ? unlocks.unlimitedExpiresAt : null,
             unlockedIds: Array.from(unlocks.unlockedIds),
         },
         purchaseHistory: purchaseHistory,
@@ -236,9 +269,17 @@ function Home() {
   const useUnlock = useCallback((itemId: string) => {
     let success = false;
     let newCount: number | undefined;
+    let isUnlimitedActive = false;
+    let expiresAt: string | null = null;
+
     setUnlocks(currentUnlocks => {
-        if (currentUnlocks.isUnlimited) {
+        const hasValidUnlimited = currentUnlocks.isUnlimited && 
+          (!currentUnlocks.unlimitedExpiresAt || new Date(currentUnlocks.unlimitedExpiresAt).getTime() > Date.now());
+
+        if (hasValidUnlimited) {
             success = true;
+            isUnlimitedActive = true;
+            expiresAt = currentUnlocks.unlimitedExpiresAt || null;
             return {
                 ...currentUnlocks,
                 unlockedIds: new Set(currentUnlocks.unlockedIds).add(itemId),
@@ -249,18 +290,32 @@ function Home() {
             newCount = currentUnlocks.count - 1;
             return {
                 ...currentUnlocks,
+                isUnlimited: false,
+                unlimitedExpiresAt: null,
                 count: newCount,
                 unlockedIds: new Set(currentUnlocks.unlockedIds).add(itemId),
             };
         }
-        return currentUnlocks;
+        return {
+          ...currentUnlocks,
+          isUnlimited: false,
+          unlimitedExpiresAt: null,
+        };
     });
     
-    if (success && newCount !== undefined) {
+    if (success) {
+      if (isUnlimitedActive) {
+        const remainingTime = getSubscriptionRemainingText(expiresAt);
         toast({
-            title: "Details Unlocked!",
-            description: `You have ${newCount} unlocks remaining.`,
+          title: "Details Unlocked!",
+          description: `Ultimate Plan: ${remainingTime} left in your subscription month.`,
         });
+      } else if (newCount !== undefined) {
+        toast({
+          title: "Details Unlocked!",
+          description: `You have ${newCount} unlock credit${newCount === 1 ? '' : 's'} remaining.`,
+        });
+      }
     }
     
     return success;
@@ -271,6 +326,9 @@ function Home() {
       const newUnlocksState = { ...currentUnlocks };
       if (plan === 'unlimited') {
         newUnlocksState.isUnlimited = true;
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + 30); // Exactly 1 month (30 days)
+        newUnlocksState.unlimitedExpiresAt = expiry.toISOString();
       } else {
         newUnlocksState.count += plan;
       }
@@ -291,7 +349,7 @@ function Home() {
 
     toast({
       title: "Purchase Successful!",
-      description: plan === 'unlimited' ? "You now have unlimited unlocks." : `You've added ${plan} unlocks.`,
+      description: plan === 'unlimited' ? "You now have unlimited unlocks for 30 days." : `You've added ${plan} unlocks.`,
       variant: "default",
     });
 
@@ -324,7 +382,10 @@ function Home() {
         return;
     }
     if (selectedItem) {
-        if (unlocks.isUnlimited || unlocks.count > 0) {
+        const isUnlimitedActive = unlocks.isUnlimited && 
+          (!unlocks.unlimitedExpiresAt || new Date(unlocks.unlimitedExpiresAt).getTime() > Date.now());
+
+        if (isUnlimitedActive || unlocks.count > 0) {
             setUnlockConfirmationOpen(true);
         } else {
             setItemToUnlock(selectedItem);
@@ -631,9 +692,24 @@ function Home() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Unlock</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will use one of your unlock credits. This action cannot be undone.
-              You have {unlocks.count} unlocks remaining.
+            <AlertDialogDescription className="space-y-2 pt-1 text-sm">
+              {unlocks.isUnlimited && (!unlocks.unlimitedExpiresAt || new Date(unlocks.unlimitedExpiresAt).getTime() > Date.now()) ? (
+                <>
+                  <span>You have the <strong>Ultimate Subscription</strong> active with unlimited unlocks.</span>
+                  <br />
+                  <span className="font-semibold text-primary inline-block mt-1">
+                    {getSubscriptionRemainingText(unlocks.unlimitedExpiresAt)} left in your subscription month.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span>This will use one of your unlock credits. This action cannot be undone.</span>
+                  <br />
+                  <span className="font-semibold text-foreground inline-block mt-1">
+                    You have {unlocks.count} unlock credit{unlocks.count === 1 ? '' : 's'} remaining.
+                  </span>
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
