@@ -16,11 +16,20 @@ const api = axios.create({
 // TEMPORARY: also answer plain axios calls (e.g. payment verification) in demo mode.
 if (DEMO_MODE) axios.defaults.adapter = demoAdapter;
 
+// --- 🔐 WHICH LOGIN TO USE ---
+// The admin/staff panels keep their login separate from the main site's login.
+// (Before, signing in to the admin panel silently turned the main site into the
+// "admin" account in that browser, so listings and likes were saved to the wrong account.)
+export const isPanelPage = () =>
+  typeof window !== 'undefined' && /^\/(admin|staff)(\/|$)/.test(window.location.pathname);
+export const accessKey = () => (isPanelPage() ? 'panel_access_token' : 'access_token');
+export const refreshKey = () => (isPanelPage() ? 'panel_refresh_token' : 'refresh_token');
+
 // --- 🔐 AUTHENTICATION INTERCEPTOR ---
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem(accessKey());
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -155,10 +164,25 @@ const adaptRoommateToProfile = (data: any): RoommateProfile => {
 };
 
 // --- API CALLS ---
+/**
+ * The backend returns lists in pages (10 items by default). This fetches every page,
+ * so no listing, coupon, purchase, etc. is silently left out.
+ */
+export async function getAllPages(path: string): Promise<any[]> {
+  const sep = path.includes('?') ? '&' : '?';
+  const all: any[] = [];
+  for (let page = 1; page <= 50; page++) {
+    const { data } = await api.get(`${path}${sep}page=${page}&page_size=100`);
+    if (Array.isArray(data)) return data; // endpoint is not paginated
+    all.push(...(data?.results || []));
+    if (!data?.next) break;
+  }
+  return all;
+}
+
 export const getProperties = async (): Promise<Listing[]> => {
   try {
-    const response = await api.get('/properties/');
-    const rawData = response.data.results ? response.data.results : response.data;
+    const rawData = await getAllPages('/properties/');
     return rawData.map(adaptPropertyToListing);
   } catch (error) {
     console.error("Failed to fetch properties:", error);
@@ -179,8 +203,7 @@ export const getPropertyById = async (id: string): Promise<Listing | null> => {
 
 export const getAdminProperties = async (): Promise<Listing[]> => {
   try {
-    const response = await api.get('/properties/?admin=true');
-    const rawData = response.data.results ? response.data.results : response.data;
+    const rawData = await getAllPages('/properties/?admin=true');
     return rawData.map(adaptPropertyToListing);
   } catch (error) {
     console.error("Failed to fetch admin properties:", error);
@@ -190,8 +213,7 @@ export const getAdminProperties = async (): Promise<Listing[]> => {
 
 export const getRoommateProperties = async (): Promise<Listing[]> => {
   try {
-    const response = await api.get('/properties/?property_type=ROOMMATE');
-    const rawData = response.data.results ? response.data.results : response.data;
+    const rawData = await getAllPages('/properties/?property_type=ROOMMATE');
     return rawData.map(adaptPropertyToListing);
   } catch (error) {
     console.error("Failed to fetch roommate properties:", error);
@@ -201,8 +223,7 @@ export const getRoommateProperties = async (): Promise<Listing[]> => {
 
 export const getRoommates = async (): Promise<RoommateProfile[]> => {
   try {
-    const response = await api.get('/roommates/');
-    const rawData = response.data.results ? response.data.results : response.data;
+    const rawData = await getAllPages('/roommates/');
     return rawData.map(adaptRoommateToProfile);
   } catch (error) {
     console.error("Failed to fetch roommates:", error);
@@ -222,8 +243,8 @@ export const createListing = async (formData: FormData) => {
 export const loginUser = async (credentials: { username: string; password: string }) => {
     const response = await api.post('/auth/login/', credentials);
     if (response.data.access) {
-      localStorage.setItem('access_token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
+      localStorage.setItem(accessKey(), response.data.access);
+      localStorage.setItem(refreshKey(), response.data.refresh);
     }
     return response.data;
 };
@@ -238,10 +259,21 @@ export const toggleFavoriteProperty = async (propertyId: string) => {
   }
 };
 
+/** IDs of listings the logged-in user liked (stored on the server). */
+export const getMyFavoriteIds = async (): Promise<string[]> => {
+  const { data } = await api.get('/my-favorites/');
+  return (data?.ids || []).map(String);
+};
+
+/** Like / unlike a listing. Sends the exact state so repeated clicks can't get out of sync. */
+export const setFavorite = async (propertyId: string, liked: boolean) => {
+  const { data } = await api.post(`/properties/${propertyId}/toggle_favorite/`, { liked });
+  return data;
+};
+
 export const getMyProperties = async (): Promise<Listing[]> => {
   try {
-    const response = await api.get('/my-properties/'); 
-    const rawData = response.data.results ? response.data.results : response.data;
+    const rawData = await getAllPages('/my-properties/');
     return rawData.map(adaptPropertyToListing);
   } catch (error) {
     console.error("Failed to fetch my properties:", error);
@@ -309,7 +341,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
+        const refreshToken = localStorage.getItem(refreshKey());
         if (refreshToken) {
           // Request a new access token using standard axios (to avoid infinite interceptor loops)
           const refreshResponse = await axios.post(`${API_URL}/auth/refresh/`, {
@@ -319,11 +351,11 @@ api.interceptors.response.use(
           const newAccessToken = refreshResponse.data.access;
           
           // Save the new token
-          localStorage.setItem('access_token', newAccessToken);
+          localStorage.setItem(accessKey(), newAccessToken);
           
           // If the backend also rotated the refresh token, save that too
           if (refreshResponse.data.refresh) {
-             localStorage.setItem('refresh_token', refreshResponse.data.refresh);
+             localStorage.setItem(refreshKey(), refreshResponse.data.refresh);
           }
 
           // Update the failed request's header with the new token
@@ -335,15 +367,16 @@ api.interceptors.response.use(
       } catch (refreshError) {
         // If the refresh token is ALSO expired, force a hard logout
         if (typeof window !== 'undefined') {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          localStorage.removeItem('setmystay_isLoggedIn');
-          const onAdminPage = window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/staff');
+          const onAdminPage = isPanelPage();
+          localStorage.removeItem(accessKey());
+          localStorage.removeItem(refreshKey());
           if (onAdminPage) {
             localStorage.removeItem('admin_authenticated');
+            localStorage.removeItem('staff_authenticated');
             window.location.href = window.location.pathname.startsWith('/staff') ? '/staff/login' : '/admin/login';
           } else {
             // Normal users: log out cleanly and stay on the main site
+            localStorage.removeItem('setmystay_isLoggedIn');
             ['user_email', 'user_name', 'user_phone', 'user_address', 'user_pic',
              'setmystay_user_data', 'setmystay_purchase_history'].forEach((k) => localStorage.removeItem(k));
             window.location.href = '/';
@@ -363,8 +396,7 @@ api.interceptors.response.use(
 
 // --- COUPON API ---
 export const getCoupons = async () => {
-  const res = await api.get('/coupons/');
-  const raw = res.data.results ? res.data.results : res.data;
+  const raw = await getAllPages('/coupons/');
   return raw.map((c: any) => ({ ...c, discountPercentage: c.discount_percentage, isActive: c.is_active }));
 };
 export const createCoupon = async (data: any) => await api.post('/coupons/', { code: data.code, discount_percentage: data.discountPercentage, is_active: data.isActive });
@@ -373,8 +405,7 @@ export const deleteCoupon = async (id: string) => await api.delete(`/coupons/${i
 
 // --- ADVERTISEMENT API ---
 export const getAdvertisements = async () => {
-  const res = await api.get('/advertisements/');
-  const raw = res.data.results ? res.data.results : res.data;
+  const raw = await getAllPages('/advertisements/');
   return raw.map((a: any) => ({ ...a, isActive: a.is_active }));
 };
 export const createAdvertisement = async (formData: FormData) => await api.post('/advertisements/', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -383,8 +414,7 @@ export const deleteAdvertisement = async (id: string) => await api.delete(`/adve
 
 // --- STAFF API ---
 export const getStaff = async () => {
-  const res = await api.get('/staff/');
-  const raw = res.data.results ? res.data.results : res.data;
+  const raw = await getAllPages('/staff/');
   return raw.map((s: any) => ({
     id: s.id.toString(),
     name: s.first_name || s.username, // Fallback to username if name is empty
@@ -416,13 +446,11 @@ export interface PurchaseRecord {
 }
 
 export const getMyPurchases = async (): Promise<PurchaseRecord[]> => {
-  const response = await api.get('/payments/my-history/');
-  return response.data.results ? response.data.results : response.data;
+  return getAllPages('/payments/my-history/');
 };
 
 export const getAllPurchasesAdmin = async (): Promise<PurchaseRecord[]> => {
-  const response = await api.get('/payments/all-history/');
-  return response.data.results ? response.data.results : response.data;
+  return getAllPages('/payments/all-history/');
 };
 
 export const getUserUnlocks = async (): Promise<string[]> => {

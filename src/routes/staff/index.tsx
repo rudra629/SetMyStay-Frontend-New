@@ -74,7 +74,7 @@ function StaffDashboard() {
         let isMounted = true;
         const checkStaffAuth = async () => {
             const authStatus = localStorage.getItem('staff_authenticated');
-            const token = localStorage.getItem('access_token');
+            const token = localStorage.getItem('panel_access_token');
             if (authStatus !== 'true' || !token) {
                 localStorage.removeItem('staff_authenticated');
                 navigate({ to: '/staff/login', replace: true });
@@ -89,7 +89,7 @@ function StaffDashboard() {
             } catch (err) {
                 console.error("Staff verification failed:", err);
                 localStorage.removeItem('staff_authenticated');
-                localStorage.removeItem('access_token');
+                localStorage.removeItem('panel_access_token');
                 navigate({ to: '/staff/login', replace: true });
             }
         };
@@ -99,7 +99,7 @@ function StaffDashboard() {
     
     const handleLogout = () => {
         localStorage.removeItem('staff_authenticated');
-        localStorage.removeItem('access_token'); 
+        localStorage.removeItem('panel_access_token'); 
         navigate({ to: '/staff/login', replace: true });
     };
     

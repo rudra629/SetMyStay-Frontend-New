@@ -18,7 +18,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { Listing, RoommateProfile, Page, ListingType, UnlockPlan, Bed, Advertisement, Coupon, Purchase, AnyListing, PricingData } from "@/lib/types";
 import { defaultPricing, dummyProperties, dummyRoommates } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { getProperties, getRoommates, toggleFavoriteProperty, getCoupons, getAdvertisements, createListing, listingToRoommateProfile, getMyPurchases, getMyPlan, unlockListingApi, getPropertyById } from "@/lib/api";
+import api, { getProperties, getRoommates, toggleFavoriteProperty, getCoupons, getAdvertisements, createListing, listingToRoommateProfile, getMyPurchases, getMyPlan, unlockListingApi, getPropertyById, getMyFavoriteIds, setFavorite, getMyProperties } from "@/lib/api";
 import type { MyPlan } from "@/lib/api";
 
 import { Header } from "@/components/layout/header";
@@ -155,6 +155,25 @@ function Home() {
     }
   }, [applyServerPlan]);
 
+  // Likes and "My Properties" come from the server, so they survive logout and clearing cookies.
+  const syncUserListsFromServer = useCallback(async () => {
+    if (!localStorage.getItem('access_token')) return;
+    try {
+      const ids = await getMyFavoriteIds();
+      setLikedItemIds(new Set(ids));
+    } catch (e) {
+      console.warn("Could not load likes from server:", e);
+    }
+    try {
+      const mine = await getMyProperties();
+      setMyProperties(mine.map((p) =>
+        (p.propertyType as string)?.toLowerCase() === 'roommate' ? listingToRoommateProfile(p) : p
+      ));
+    } catch (e) {
+      console.warn("Could not load my properties:", e);
+    }
+  }, []);
+
   // After an unlock the server starts sending the owner's phone/address for that listing,
   // so fetch the listing again and swap it in everywhere it is shown.
   const refreshUnlockedItem = useCallback(async (id: string, type: 'listing' | 'roommate') => {
@@ -178,6 +197,26 @@ function Home() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+    if (!localStorage.getItem('admin_authenticated') && !localStorage.getItem('staff_authenticated')) return;
+    if (localStorage.getItem('setmystay_panel_split_done')) return;
+    localStorage.setItem('setmystay_panel_split_done', '1');
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    // Is the main site's login really the admin/staff account?
+    api.get('/auth/verify-staff/').then(() => {
+      localStorage.setItem('panel_access_token', token);
+      const r = localStorage.getItem('refresh_token');
+      if (r) localStorage.setItem('panel_refresh_token', r);
+      ['access_token', 'refresh_token', 'setmystay_isLoggedIn', 'user_email', 'user_name', 'user_phone',
+       'user_address', 'user_pic', 'setmystay_user_data', 'setmystay_purchase_history', 'is_profile_complete']
+        .forEach((k) => localStorage.removeItem(k));
+      toast({ title: "Please sign in again", description: "The admin panel and the website now keep separate logins." });
+      setTimeout(() => window.location.reload(), 1500);
+    }).catch(() => { /* normal user account: nothing to do */ });
+  }, [isClient]);
 
   useEffect(() => {
     if (isClient) {
@@ -335,6 +374,7 @@ function Home() {
 
       if (loggedInStatus) {
         syncPlanFromServer();
+        syncUserListsFromServer();
       }
     }
   }, [isClient]);
@@ -610,23 +650,20 @@ function Home() {
         return;
     }
     
+    const wantLiked = !likedItemIds.has(itemId);
     setLikedItemIds(currentSet => {
         const newSet = new Set(currentSet);
-        if (newSet.has(itemId)) {
-            newSet.delete(itemId);
-        } else {
-            newSet.add(itemId);
-        }
+        if (wantLiked) newSet.add(itemId); else newSet.delete(itemId);
         return newSet;
     });
 
     try {
-        await toggleFavoriteProperty(itemId);
+        await setFavorite(itemId, wantLiked);
     } catch (error) {
-        toast({ title: "Error", description: "Failed to save favorite.", variant: "destructive" });
+        toast({ title: "Error", description: "Could not save your like. Please try again.", variant: "destructive" });
         setLikedItemIds(currentSet => {
             const newSet = new Set(currentSet);
-            newSet.has(itemId) ? newSet.delete(itemId) : newSet.add(itemId);
+            if (wantLiked) newSet.delete(itemId); else newSet.add(itemId);
             return newSet;
         });
     }
@@ -694,6 +731,7 @@ function Home() {
         if (pendingListingData.noc) formData.append('document_noc', pendingListingData.noc);
 
         await createListing(formData);
+        syncUserListsFromServer();
 
         setPendingListingData(null);
         toast({

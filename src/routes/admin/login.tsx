@@ -52,7 +52,7 @@ function AdminLoginPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    if (localStorage.getItem('admin_authenticated') === 'true' && localStorage.getItem('access_token')) {
+    if (localStorage.getItem('admin_authenticated') === 'true' && localStorage.getItem('panel_access_token')) {
       navigate({ to: '/admin', replace: true });
     }
   }, [navigate]);
@@ -64,8 +64,8 @@ function AdminLoginPage() {
   }, [resendIn]);
 
   const finishLogin = (data: any) => {
-    localStorage.setItem('access_token', data.access);
-    localStorage.setItem('refresh_token', data.refresh);
+    localStorage.setItem('panel_access_token', data.access);
+    localStorage.setItem('panel_refresh_token', data.refresh);
     localStorage.setItem('admin_authenticated', 'true');
     if (data.device_token) localStorage.setItem(DEVICE_KEY, data.device_token);
     toast({ title: 'Signed in', description: 'Opening the admin dashboard...' });

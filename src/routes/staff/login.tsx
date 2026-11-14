@@ -41,7 +41,7 @@ function StaffLoginPage() {
   useEffect(() => {
     setIsMounted(true);
     // If already authenticated with a Django token, move to dashboard
-    if (localStorage.getItem('access_token') && localStorage.getItem('staff_authenticated') === 'true') {
+    if (localStorage.getItem('panel_access_token') && localStorage.getItem('staff_authenticated') === 'true') {
       navigate({ to: '/staff', replace: true });
     }
   }, [navigate]);

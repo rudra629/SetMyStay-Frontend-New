@@ -821,7 +821,7 @@ function AdminDashboard() {
         let isMounted = true;
         const checkAuth = async () => {
             const authStatus = localStorage.getItem('admin_authenticated');
-            const token = localStorage.getItem('access_token');
+            const token = localStorage.getItem('panel_access_token');
             if (authStatus !== 'true' || !token) {
                 localStorage.removeItem('admin_authenticated');
                 navigate({ to: '/admin/login', replace: true });
@@ -836,7 +836,7 @@ function AdminDashboard() {
             } catch (err) {
                 console.error("Admin verification failed:", err);
                 localStorage.removeItem('admin_authenticated');
-                localStorage.removeItem('access_token');
+                localStorage.removeItem('panel_access_token');
                 navigate({ to: '/admin/login', replace: true });
             }
         };
@@ -1051,8 +1051,8 @@ function AdminDashboard() {
     const handleLogout = () => {
         // Remove the admin's login completely (the remembered-device mark stays, if it was ticked)
         localStorage.removeItem('admin_authenticated');
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('panel_access_token');
+        localStorage.removeItem('panel_refresh_token');
         navigate({ to: '/admin/login', replace: true });
     };
 
