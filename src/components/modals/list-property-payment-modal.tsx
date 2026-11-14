@@ -54,9 +54,16 @@ export function ListPropertyPaymentModal({
           property_id: propertyId || null,
           plan_name: 'Property Listing Fee',
         });
+        
+        // DIRECT VITE RESOLUTION (Just like the other working modal)
+        const rzpKey = 
+          data.key_id || 
+          data.key || 
+          (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_RAZORPAY_KEY_ID) || 
+          "rzp_test_Tf3u02X4Bf90SH";
 
         const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+          key: rzpKey,
           amount: data.amount,
           currency: data.currency || 'INR',
           name: 'SetMyStay',

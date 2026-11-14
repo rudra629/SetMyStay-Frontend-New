@@ -243,7 +243,7 @@ function StaffDashboard() {
         <div className="bg-slate-50 min-h-screen">
             <header className="bg-white shadow-sm">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-4 sm:py-2">
-                     <h1 className="text-2xl font-bold text-slate-800">StayFinder Staff Panel</h1>
+                     <h1 className="text-2xl font-bold text-slate-800">SetMyStay Staff Panel</h1>
                      <div className="flex items-center gap-2 flex-wrap">
                         <Button asChild>
                             <Link to="/">
