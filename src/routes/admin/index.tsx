@@ -713,10 +713,12 @@ function AdminDashboard() {
     const [pricing, setPricing] = useState<PricingData | null>(null);
     const [swipeLimit, setSwipeLimit] = useState<number>(25);
     const [slotCooldownHours, setSlotCooldownHours] = useState<number>(24);
+    const [swipeResetHours, setSwipeResetHours] = useState<number>(24);
     useEffect(() => {
         const s = loadSettings();
         setSwipeLimit(s.swipeLimit);
         setSlotCooldownHours(s.slotCooldownHours || 24);
+        setSwipeResetHours(s.swipeResetHours || 24);
     }, []);
     const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
     const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
@@ -913,6 +915,12 @@ function AdminDashboard() {
                 if (res.data && res.data.listings) {
                     setPricing(res.data);
                     saveToLocalStorage('pricing', res.data);
+                    const st = res.data.settings;
+                    if (st) {
+                        setSwipeLimit(Number(st.swipe_limit) || 25);
+                        setSlotCooldownHours(Number(st.slot_cooldown_hours) || 24);
+                        setSwipeResetHours(Number(st.swipe_reset_hours) || 24);
+                    }
                 } else {
                     setPricing(getFromLocalStorage('pricing', defaultPricing));
                 }
@@ -1115,13 +1123,18 @@ function AdminDashboard() {
     const handleSavePricing = async () => {
         if (!swipeLimit || swipeLimit < 1) { toast({ title: "Invalid swipe limit", description: "Enter 1 or more.", variant: "destructive" }); return; }
         if (!slotCooldownHours || slotCooldownHours < 1) { toast({ title: "Invalid slot timeout", description: "Enter 1 hour or more.", variant: "destructive" }); return; }
-        saveToLocalStorage('pricing', pricing);
-        saveSettings({ swipeLimit, slotCooldownHours });
+        if (!swipeResetHours || swipeResetHours < 1) { toast({ title: "Invalid swipe reset time", description: "Enter 1 hour or more.", variant: "destructive" }); return; }
+        const payload = {
+            ...pricing,
+            settings: { swipe_limit: swipeLimit, slot_cooldown_hours: slotCooldownHours, swipe_reset_hours: swipeResetHours },
+        };
         try {
-            await api.post('/pricing/', pricing);
-            toast({ title: "Pricing Updated", description: "The new prices have been saved to the database and site." });
-        } catch (e) {
-            toast({ title: "Pricing Saved Locally", description: "Saved locally, could not reach database." });
+            const { data } = await api.post('/pricing/', payload);
+            saveToLocalStorage('pricing', data || payload);
+            saveSettings({ swipeLimit, slotCooldownHours, swipeResetHours });
+            toast({ title: "Pricing Updated", description: "Prices and swipe/slot settings are saved for all users." });
+        } catch (e: any) {
+            toast({ title: "Not saved", description: e?.response?.data?.error || "Could not reach the server. Nothing was changed.", variant: "destructive" });
         }
     };
     const handleUpdatePassword = (newPass: string) => {
@@ -1555,6 +1568,10 @@ function AdminDashboard() {
                                                     <div className="flex items-center gap-4 mt-3">
                                                         <Label htmlFor="slot-cooldown" className="w-28">Slot Timeout (Hours)</Label>
                                                         <Input id="slot-cooldown" type="number" min={1} value={slotCooldownHours} onChange={(e) => setSlotCooldownHours(parseInt(e.target.value) || 24)} className="max-w-xs" />
+                                                    </div>
+                                                    <div className="flex items-center gap-4 mt-3">
+                                                        <Label htmlFor="swipe-reset" className="w-28">Swipes reset after (Hours)</Label>
+                                                        <Input id="swipe-reset" type="number" min={1} value={swipeResetHours} onChange={(e) => setSwipeResetHours(parseInt(e.target.value) || 24)} className="max-w-xs" />
                                                     </div>
                                                 </div>
                                             </div>

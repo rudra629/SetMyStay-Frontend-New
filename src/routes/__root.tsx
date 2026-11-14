@@ -112,10 +112,35 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+const ASSET_RECOVERY_SCRIPT = `(function(){
+  var KEY = "setmystay_asset_retry";
+  function recover(url){
+    try { if (sessionStorage.getItem(KEY)) return; sessionStorage.setItem(KEY, "1"); } catch (e) { return; }
+    var done = function(){ location.reload(); };
+    try { fetch(url, { cache: "reload" }).then(done, done); } catch (e) { done(); }
+  }
+  window.addEventListener("error", function(e){
+    var t = e && e.target;
+    if (!t || (t.tagName !== "SCRIPT" && t.tagName !== "LINK")) return;
+    var url = t.src || t.href || "";
+    if (url.indexOf("/assets/") !== -1) recover(url);
+  }, true);
+  window.addEventListener("vite:preloadError", function(e){
+    if (e && e.preventDefault) e.preventDefault();
+    recover(location.href);
+  });
+  window.addEventListener("load", function(){
+    setTimeout(function(){ try { sessionStorage.removeItem(KEY); } catch (e) {} }, 15000);
+  });
+})();`;
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        {/* If a site file fails to load (e.g. during a new deploy the browser cached a 404),
+            re-download it fresh and reload once, so visitors never get stuck on "Loading". */}
+        <script dangerouslySetInnerHTML={{ __html: ASSET_RECOVERY_SCRIPT }} />
         <HeadContent />
       </head>
       <body>

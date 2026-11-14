@@ -3,7 +3,7 @@ import { AnimatePresence, animate, motion, useMotionValue, useTransform } from "
 import { Heart, X, RotateCcw, MapPin, Info, Sparkles } from "lucide-react";
 import type { AnyListing, Listing, RoommateProfile } from "@/lib/types";
 import { cn, isVideoUrl, getFirstImageUrl } from "@/lib/utils";
-import { recordSwipe, swipesLeft } from "@/lib/app-settings";
+import { recordSwipe, fetchSwipeState } from "@/lib/app-settings";
 
 interface SwipeDeckProps {
   items: AnyListing[];
@@ -21,7 +21,10 @@ export function SwipeDeck({ items, likedItemIds, onToggleLike, onViewDetails, cl
   const [trigger, setTrigger] = useState<{ dir: 1 | -1; n: number } | null>(null);
 
   const [left, setLeft] = useState(25);
-  useEffect(() => { setLeft(swipesLeft()); }, []);
+  const [resetsAt, setResetsAt] = useState<string | null>(null);
+  useEffect(() => {
+    fetchSwipeState().then((s) => { setLeft(s.left); setResetsAt(s.resetsAt); });
+  }, []);
   useEffect(() => { setIndex(0); }, [items.length]);
 
   const handleSwiped = (item: AnyListing, dir: 1 | -1) => {
@@ -29,8 +32,8 @@ export function SwipeDeck({ items, likedItemIds, onToggleLike, onViewDetails, cl
     setLastAction(dir === 1 ? "like" : "pass");
     setIndex((i) => i + 1);
     setTrigger(null);
-    recordSwipe();
-    setLeft(swipesLeft());
+    setLeft((l) => Math.max(0, l - 1)); // instant feedback, then take the server's number
+    recordSwipe().then((s) => { setLeft(s.left); setResetsAt(s.resetsAt); });
   };
 
   const visible = items.slice(index, index + 3);
@@ -57,6 +60,16 @@ export function SwipeDeck({ items, likedItemIds, onToggleLike, onViewDetails, cl
             <Sparkles className="h-10 w-10 text-primary" />
             <p className="font-display text-2xl">You've used all your swipes</p>
             <p className="text-sm text-muted-foreground">Your liked roommates are saved under Liked Properties.</p>
+            {resetsAt && (
+              <p className="text-sm font-medium text-primary">
+                New swipes {(() => {
+                  const ms = new Date(resetsAt).getTime() - Date.now();
+                  if (ms <= 60_000) return "in a moment";
+                  const h = Math.floor(ms / 3_600_000), m = Math.floor((ms % 3_600_000) / 60_000);
+                  return `in ${h > 0 ? `${h} hr ` : ""}${m} min`;
+                })()}
+              </p>
+            )}
           </div>
         )}
         {done && !outOfSwipes && (
