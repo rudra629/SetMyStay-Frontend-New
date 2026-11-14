@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, X } from "lucide-react";
 
 interface AdvertisementModalProps {
   isOpen: boolean;
@@ -19,10 +19,25 @@ export function AdvertisementModal({ isOpen, onClose, title, description, imageU
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden gap-0 border-0">
+      <DialogContent className="w-[calc(100%-2.5rem)] max-w-sm sm:max-w-[420px] p-0 overflow-hidden gap-0 border-0 rounded-2xl sm:rounded-3xl my-auto shadow-2xl relative">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 z-30 rounded-full bg-black/60 hover:bg-black/80 p-2 text-white backdrop-blur-sm transition-colors cursor-pointer"
+          aria-label="Close"
+        >
+          <X className="h-4 w-4" />
+        </button>
         {imageUrl && (
           <div className="relative h-52 w-full">
-            <img src={imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <img 
+              src={imageUrl} 
+              alt="" 
+              className="absolute inset-0 h-full w-full object-cover" 
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80";
+              }}
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent" />
           </div>
         )}

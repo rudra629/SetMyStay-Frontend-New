@@ -68,6 +68,8 @@ const adaptPropertyToListing = (data: any): Listing => {
     ownerId: data.owner?.toString() || '1',
     brokerStatus: data.is_broker ? 'With Broker' : 'Without Broker', 
     vendorNumber: data.vendor_number || data.vendorNumber || undefined,
+    age: data.age ? Number(data.age) : undefined,
+    sharingStatus: data.sharing_status || undefined,
 
     aadhaarCardUrl: data.document_aadhaar || undefined,
     electricityBillUrl: data.document_electricity || undefined,
@@ -79,35 +81,43 @@ const adaptPropertyToListing = (data: any): Listing => {
   };
 };
 
-export const listingToRoommateProfile = (listing: Listing): RoommateProfile => ({
-  id: listing.id,
-  propertyType: 'Roommate',
-  ownerName: listing.ownerName || listing.title,
-  age: 25,
-  rent: listing.rent,
-  city: listing.city,
-  locality: listing.locality,
-  state: listing.state || 'Maharashtra',
-  completeAddress: listing.completeAddress || listing.partialAddress || '',
-  partialAddress: listing.partialAddress || listing.completeAddress || '',
-  contactPhonePrimary: listing.contactPhonePrimary,
-  contactPhoneSecondary: listing.contactPhoneSecondary,
-  contactEmail: listing.contactEmail,
-  description: listing.description || `Looking for roommate in ${listing.locality}`,
-  preferences: listing.amenities || [],
-  gender: 'Any',
-  images: listing.images?.length ? listing.images : ['https://placehold.co/400x400'],
-  videoUrl: listing.videoUrl,
-  views: listing.views || 0,
-  ownerId: listing.ownerId || '1',
-  vendorNumber: listing.vendorNumber,
-  aadhaarCardUrl: listing.aadhaarCardUrl,
-  electricityBillUrl: listing.electricityBillUrl,
-  nocUrl: listing.nocUrl,
-  hasProperty: true,
-  status: listing.status as any,
-  submittedAt: listing.submittedAt,
-});
+export const listingToRoommateProfile = (listing: Listing): RoommateProfile => {
+  const isLookingForProperty =
+    listing.sharingStatus === 'Moving soon' ||
+    listing.sharingStatus === 'Looking for property' ||
+    (listing as any).has_property === false ||
+    (listing as any).hasProperty === false;
+
+  return {
+    id: listing.id,
+    propertyType: 'Roommate',
+    ownerName: listing.ownerName || listing.title,
+    age: listing.age || (listing as any).age || 25,
+    rent: listing.rent,
+    city: listing.city,
+    locality: listing.locality,
+    state: listing.state || 'Maharashtra',
+    completeAddress: listing.completeAddress || listing.partialAddress || '',
+    partialAddress: listing.partialAddress || listing.completeAddress || '',
+    contactPhonePrimary: listing.contactPhonePrimary,
+    contactPhoneSecondary: listing.contactPhoneSecondary,
+    contactEmail: listing.contactEmail,
+    description: listing.description || `Looking for roommate in ${listing.locality}`,
+    preferences: listing.amenities || [],
+    gender: (listing as any).genderPreference || (listing as any).gender_preference || 'Any',
+    images: listing.images?.length ? listing.images : ['https://placehold.co/400x400'],
+    videoUrl: listing.videoUrl,
+    views: listing.views || 0,
+    ownerId: listing.ownerId || '1',
+    vendorNumber: listing.vendorNumber,
+    aadhaarCardUrl: listing.aadhaarCardUrl,
+    electricityBillUrl: listing.electricityBillUrl,
+    nocUrl: listing.nocUrl,
+    hasProperty: isLookingForProperty ? false : true,
+    status: listing.status as any,
+    submittedAt: listing.submittedAt,
+  };
+};
 
 const adaptRoommateToProfile = (data: any): RoommateProfile => {
   return {
@@ -250,9 +260,13 @@ export const deleteProperty = async (id: string) => {
 
 export const updateRoommateStatus = async (id: string, newStatus: string) => {
   try {
-    const response = await api.patch(`/roommates/${id}/`, { status: newStatus.toUpperCase() });
+    const response = await api.post(`/properties/${id}/update_status/?admin=true`, { status: newStatus.toUpperCase() });
     return response.data;
   } catch (error) {
+    try {
+      const fallback = await api.patch(`/roommates/${id}/`, { status: newStatus.toUpperCase() });
+      return fallback.data;
+    } catch {}
     console.error("Failed to update roommate status:", error);
     throw error;
   }
@@ -260,9 +274,13 @@ export const updateRoommateStatus = async (id: string, newStatus: string) => {
 
 export const deleteRoommate = async (id: string) => {
   try {
-    const response = await api.delete(`/roommates/${id}/`);
+    const response = await api.delete(`/properties/${id}/?admin=true`);
     return response.data;
   } catch (error) {
+    try {
+      const fallback = await api.delete(`/roommates/${id}/`);
+      return fallback.data;
+    } catch {}
     console.error("Failed to delete roommate:", error);
     throw error;
   }

@@ -51,20 +51,20 @@ export function SearchableSelect({
           aria-expanded={open}
           disabled={disabled}
           className={cn(
-            "w-full justify-between h-10 px-3 font-normal text-left bg-background hover:bg-background/90",
+            "w-full justify-between h-10 px-3 font-normal text-left bg-background hover:bg-background/90 transition-all duration-200 ease-in-out",
             !value && "text-muted-foreground",
             disabled && "opacity-50 cursor-not-allowed",
             className
           )}
         >
           <span className="truncate">{value || placeholder}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 transition-transform duration-200" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] min-w-[220px] p-0" align="start">
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} />
-          <CommandList className="max-h-60 overflow-y-auto">
+      <PopoverContent className="w-[--radix-popover-trigger-width] min-w-[220px] p-0 shadow-lg border border-border/80 rounded-xl transition-all duration-200 ease-out animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95" align="start">
+        <Command className="rounded-xl">
+          <CommandInput placeholder={searchPlaceholder} className="transition-colors duration-150" />
+          <CommandList className="max-h-60 overflow-y-auto scroll-smooth">
             <CommandEmpty className="p-3 text-sm text-center text-muted-foreground">
               {emptyText}
             </CommandEmpty>
@@ -79,12 +79,12 @@ export function SearchableSelect({
                       onChange(option);
                       setOpen(false);
                     }}
-                    className="cursor-pointer flex items-center justify-between py-2 px-3 hover:bg-accent"
+                    className="cursor-pointer flex items-center justify-between py-2 px-3 hover:bg-accent transition-colors duration-150 ease-out"
                   >
                     <span className="truncate">{option}</span>
                     <Check
                       className={cn(
-                        "ml-2 h-4 w-4 shrink-0 text-primary",
+                        "ml-2 h-4 w-4 shrink-0 text-primary transition-opacity duration-150",
                         isSelected ? "opacity-100" : "opacity-0"
                       )}
                     />

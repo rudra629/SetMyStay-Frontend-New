@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Check, Star, Gem, Rocket, Crown, Building, User } from "lucide-react";
+import { Check, Star, Gem, Rocket, Crown, Building, User, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { UnlockPlan, PricingData, Coupon } from "@/lib/types";
 import { PaymentConfirmationModal } from "./payment-confirmation-modal";
@@ -78,8 +78,8 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
         });
 
         const options = {
-          // Uses the key returned by Django first, falling back to environment variables
-          key: data.razorpay_key || data.key || data.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || (import.meta.env as any).NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          // Uses the key returned by Django first, falling back to environment variables and test key
+          key: data?.razorpay_key || data?.key || data?.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || (import.meta.env as any).NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_Tf3u02X48fg0SH',
           amount: data.amount,
           currency: data.currency,
           name: 'SetMyStay',
@@ -168,12 +168,22 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
 
       {/* Pricing Cards Modal */}
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-5xl p-0 max-h-[90vh] flex flex-col">
-          <DialogHeader className="p-4 md:p-6 pb-4 border-b shrink-0">
-            <DialogTitle className="text-2xl sm:text-3xl font-bold text-center">Our Pricing Plans</DialogTitle>
-            <DialogDescription className="text-center text-base sm:text-lg">
-              Choose a plan that's right for you.
-            </DialogDescription>
+        <DialogContent className="w-[calc(100%-1.5rem)] sm:w-[92vw] max-w-5xl p-0 max-h-[90vh] flex flex-col rounded-2xl sm:rounded-3xl overflow-hidden my-auto border border-border/80 shadow-2xl">
+          <DialogHeader className="p-4 md:p-6 pb-4 border-b shrink-0 relative flex flex-row items-center justify-between">
+            <div className="flex-1 text-center pr-6 sm:pr-0">
+              <DialogTitle className="text-xl sm:text-3xl font-bold">Our Pricing Plans</DialogTitle>
+              <DialogDescription className="text-xs sm:text-base mt-1">
+                Choose a plan that's right for you.
+              </DialogDescription>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute right-4 top-4 rounded-full p-2 text-muted-foreground hover:text-foreground bg-muted/70 hover:bg-muted transition-colors cursor-pointer z-30"
+              aria-label="Close dialog"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </DialogHeader>
 
           <Tabs defaultValue="unlock" className="w-full flex flex-col flex-1 min-h-0">

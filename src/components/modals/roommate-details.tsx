@@ -49,9 +49,33 @@ const MediaGallery = ({ profile }: { profile: RoommateProfile }) => {
           >
             {/* Cloud Video Support */}
             {isVideoUrl(src) ? (
-                 <video src={src as string} controls playsInline controlsList="nodownload" className="w-full h-full object-contain bg-black" />
+                 <video 
+                   key={src as string}
+                   src={src as string} 
+                   controls 
+                   playsInline 
+                   controlsList="nodownload" 
+                   autoPlay={index === currentIndex}
+                   ref={(el) => {
+                     if (el) {
+                       if (index === currentIndex) {
+                         el.play().catch(() => {});
+                       } else {
+                         el.pause();
+                       }
+                     }
+                   }}
+                   className="w-full h-full object-contain bg-black" 
+                 />
              ) : (
-                <img src={src as string} alt={`${profile.ownerName} media ${index + 1}`} className="absolute inset-0 h-full w-full object-cover" />
+                <img 
+                  src={src as string} 
+                  alt={`${profile.ownerName} media ${index + 1}`} 
+                  className="absolute inset-0 h-full w-full object-cover" 
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2e?w=800&q=80";
+                  }}
+                />
              )}
           </div>
         ))}

@@ -33,7 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Listing, RoommateProfile, AnyListing } from '@/lib/types';
 import { isVideoUrl } from '@/lib/utils';
 
-import { getAdminProperties, updatePropertyStatus, updateRoommateStatus, deleteProperty, deleteRoommate, listingToRoommateProfile } from '@/lib/api';
+import api, { getAdminProperties, updatePropertyStatus, updateRoommateStatus, deleteProperty, deleteRoommate, listingToRoommateProfile } from '@/lib/api';
 
 function StaffDashboard() {
     const navigate = useNavigate();
@@ -71,13 +71,30 @@ function StaffDashboard() {
     };
 
     useEffect(() => {
-        const authStatus = localStorage.getItem('staff_authenticated');
-        if (authStatus !== 'true') {
-            navigate({ to: '/staff/login', replace: true });
-        } else {
-            setIsAuthenticated(true);
-            fetchListings().finally(() => setIsLoading(false));
-        }
+        let isMounted = true;
+        const checkStaffAuth = async () => {
+            const authStatus = localStorage.getItem('staff_authenticated');
+            const token = localStorage.getItem('access_token');
+            if (authStatus !== 'true' || !token) {
+                localStorage.removeItem('staff_authenticated');
+                navigate({ to: '/staff/login', replace: true });
+                return;
+            }
+            try {
+                await api.get('/auth/verify-staff/');
+                if (isMounted) {
+                    setIsAuthenticated(true);
+                    fetchListings().finally(() => setIsLoading(false));
+                }
+            } catch (err) {
+                console.error("Staff verification failed:", err);
+                localStorage.removeItem('staff_authenticated');
+                localStorage.removeItem('access_token');
+                navigate({ to: '/staff/login', replace: true });
+            }
+        };
+        checkStaffAuth();
+        return () => { isMounted = false; };
     }, [navigate]);
     
     const handleLogout = () => {
@@ -289,6 +306,9 @@ function StaffDashboard() {
                                             src={currentItem.images[currentMediaIndex]} 
                                             alt="Listing Media" 
                                             className="absolute inset-0 h-full w-full object-contain p-2"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80";
+                                            }}
                                         />
                                      )}
                                      {currentItem.images.length > 1 && (
@@ -309,10 +329,17 @@ function StaffDashboard() {
                                 (currentItem as any).document_noc
                             ) && (
                                 <div className="border rounded-lg p-4 bg-blue-50">
-                                    <h4 className="font-semibold text-base mb-3 flex items-center gap-2">
-                                        <FileCheck className="w-5 h-5 text-blue-700" />
-                                        Verification Documents
-                                    </h4>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-semibold text-base flex items-center gap-2">
+                                            <FileCheck className="w-5 h-5 text-blue-700" />
+                                            Verification Documents
+                                        </h4>
+                                        {currentItem.propertyType === 'Roommate' && ('age' in currentItem && currentItem.age) && (
+                                            <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-semibold border border-blue-200">
+                                                Age: {currentItem.age}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="flex flex-wrap gap-4">
                                         {(currentItem.aadhaarCardUrl || (currentItem as any).document_aadhaar) && (
                                             <div className="flex flex-col items-center gap-2">
@@ -358,6 +385,12 @@ function StaffDashboard() {
                                     <strong className="block text-sm font-medium text-muted-foreground">Type</strong>
                                     <div className="capitalize">{currentItem.propertyType}</div>
                                 </div>
+                                {currentItem.propertyType === 'Roommate' && (
+                                    <div className="p-3 bg-slate-50 rounded-md space-y-1">
+                                        <strong className="block text-sm font-medium text-muted-foreground">Age</strong>
+                                        <div className="font-semibold">{('age' in currentItem && currentItem.age) ? currentItem.age : 'N/A'}</div>
+                                    </div>
+                                )}
                                 <div className="p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground">Locality</strong>
                                     <div>{currentItem.locality}</div>

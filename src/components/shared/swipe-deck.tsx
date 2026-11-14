@@ -149,7 +149,9 @@ function SwipeCard({ item, depth, trigger, onSwiped, onInfo }: { item: AnyListin
         <motion.div style={{ opacity: likeOpacity }} className="absolute left-6 top-8 -rotate-12 rounded-xl border-4 border-success px-4 py-1 font-display text-3xl font-bold tracking-widest text-success">LIKE</motion.div>
         <motion.div style={{ opacity: nopeOpacity }} className="absolute right-6 top-8 rotate-12 rounded-xl border-4 border-destructive px-4 py-1 font-display text-3xl font-bold tracking-widest text-destructive">NOPE</motion.div>
         <span className="absolute left-5 top-5 glass rounded-full px-3 py-1 text-[11px] font-semibold text-ink-foreground">
-          {roommate && item.hasProperty ? "Looking for roommate" : "Looking for property"}
+          {roommate
+            ? (item.hasProperty ? "Looking for roommate" : "Looking for property")
+            : (item.propertyType === "Rental" ? "Rental" : "PG / Co-living")}
         </span>
         <div className="absolute inset-x-0 bottom-0 space-y-3 p-6 text-ink-foreground">
           <div className="flex items-end justify-between gap-3">

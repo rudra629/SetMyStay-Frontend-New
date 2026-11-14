@@ -128,13 +128,17 @@ function Home() {
           setActiveCoupons(liveCoupons);
 
           const liveAds = await getAdvertisements();
-          const adShownInSession = sessionStorage.getItem('setmystay_ad_shown');
+          const userKey = (typeof localStorage !== 'undefined' && (localStorage.getItem('user_email') || localStorage.getItem('user_name'))) || 'guest';
+          const lastShown = localStorage.getItem(`setmystay_ad_shown_${userKey}`);
+          const ONE_DAY_MS = 24 * 60 * 60 * 1000;
           const activeAd = liveAds.find((ad: Advertisement) => ad.isActive);
           
-          if (activeAd && !adShownInSession) {
+          if (activeAd && (!lastShown || (Date.now() - parseInt(lastShown, 10)) > ONE_DAY_MS)) {
               setAdToShow(activeAd);
-              setTimeout(() => setIsAdModalOpen(true), 6000);
-              sessionStorage.setItem('setmystay_ad_shown', 'true');
+              setTimeout(() => {
+                setIsAdModalOpen(true);
+                localStorage.setItem(`setmystay_ad_shown_${userKey}`, Date.now().toString());
+              }, 6000);
           }
 
         } catch (error) {
@@ -460,6 +464,7 @@ function Home() {
       setActivePage('list');
       sessionStorage.removeItem('setmystay_intended_page');
     }
+    window.location.reload();
   };
 
   const handleLogout = () => {
@@ -467,10 +472,16 @@ function Home() {
     saveToLocalStorage('setmystay_isLoggedIn', false);
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_email');
+    localStorage.removeItem('user_name');
+    localStorage.removeItem('user_phone');
+    localStorage.removeItem('user_address');
+    localStorage.removeItem('user_pic');
     setUnlocks(defaultUserState.unlocks);
     setLikedItemIds(new Set());
     setActivePage('home');
     toast({ title: "Logged Out", description: "You have been successfully logged out." });
+    window.location.reload();
   };
   
   const handleOpenConfirmationModal = (planName: string, amount: number, onConfirm: () => void) => {

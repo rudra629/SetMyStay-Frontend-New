@@ -27,6 +27,7 @@ function ListPropertyPage() {
   const { toast } = useToast();
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<any>(null);
   const [listingAmount, setListingAmount] = useState<number>(() => feeFor("RENTAL"));
 
@@ -46,6 +47,7 @@ function ListPropertyPage() {
   const handlePaymentSuccess = async (plan?: { title: string; price: number }) => {
     try {
       setIsPaymentModalOpen(false);
+      setIsSubmitting(true);
 
       const payload = new FormData();
 
@@ -73,6 +75,10 @@ function ListPropertyPage() {
       payload.append("bhk", "1BHK");
       payload.append("furnishing", "Semi");
       payload.append("status", "PENDING");
+
+      if (formData.age) {
+        payload.append("age", formData.age.toString());
+      }
 
       payload.append("owner_name", formData.owner_name);
       payload.append("phone_primary", formData.phone_primary);
@@ -147,11 +153,25 @@ function ListPropertyPage() {
         description: `Server Error: ${serverMessage}`,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background relative">
+      {isSubmitting && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/75 backdrop-blur-sm text-white p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-full border-4 border-blue-500 border-t-transparent animate-spin" />
+            <h3 className="text-xl font-bold">Submitting Your Listing</h3>
+            <p className="text-slate-300 text-sm">
+              Payment confirmed! We are securely uploading your photos, videos, and documents to Cloudinary. Please wait a moment...
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <Button asChild variant="outline">
           <Link to="/">

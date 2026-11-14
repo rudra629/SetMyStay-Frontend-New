@@ -232,6 +232,18 @@ function handle(method: string, url: string, body: Record<string, any>): [number
   }
   if (p === "/payments/my-history/") return [200, d.purchases.filter((x) => x.user_name === "Demo User" || x.user_name === localStorage.getItem("user_name"))];
   if (p === "/payments/all-history/") return [200, d.purchases];
+  if (p === "/auth/verify-admin/") {
+    if (localStorage.getItem("admin_authenticated") === "true") {
+      return [200, { status: "ok", is_staff: true, is_superuser: true }];
+    }
+    return [403, { error: "Forbidden" }];
+  }
+  if (p === "/auth/verify-staff/") {
+    if (localStorage.getItem("staff_authenticated") === "true") {
+      return [200, { status: "ok", is_staff: true }];
+    }
+    return [403, { error: "Forbidden" }];
+  }
 
   return [200, {}];
 }

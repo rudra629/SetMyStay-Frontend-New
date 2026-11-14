@@ -13,7 +13,7 @@ import { getFromLocalStorage } from "@/lib/storage";
 
 // Default contact info for the very first run or if not set
 const DEFAULT_ADMIN_EMAIL = 'setmystay02@gmail.com';
-const DEFAULT_ADMIN_PHONE = '+918210552902';
+const DEFAULT_ADMIN_PHONE = '+91 79771 69550';
 const DEFAULT_ADMIN_ADDRESS = 'Office no. 01, Neelsidhi Splendour, Sector 15, CBD Belapur, Navi Mumbai, Maharashtra 400614';
 
 
@@ -41,7 +41,7 @@ export function Footer({ onNavigate }: FooterProps) {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
         <p className="mb-12 font-display text-4xl font-semibold text-ink-foreground">SetMyStay</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          
+
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
               <Logo className="w-10 h-10" />
@@ -81,7 +81,7 @@ export function Footer({ onNavigate }: FooterProps) {
             <div className="space-y-2 text-sm">
               <p>{contactAddress}</p>
               <a href={`mailto:${contactEmail}`} className="flex items-center gap-2 hover:text-ink-foreground">
-                <Mail className="w-4 h-4"/>
+                <Mail className="w-4 h-4" />
                 <span>{contactEmail}</span>
               </a>
               <a href={`tel:${contactPhone}`} className="flex items-center gap-2 hover:text-ink-foreground">
@@ -90,7 +90,7 @@ export function Footer({ onNavigate }: FooterProps) {
               </a>
             </div>
           </div>
-          
+
         </div>
 
         <div className="mt-12 border-t border-ink-foreground/10 pt-8 text-center text-sm">

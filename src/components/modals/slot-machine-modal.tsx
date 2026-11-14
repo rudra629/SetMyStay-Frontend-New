@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Coupon } from "@/lib/types";
 import { getCoupons } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { loadSettings } from "@/lib/app-settings";
 
 interface SlotMachineModalProps {
   isOpen: boolean;
@@ -17,7 +18,7 @@ interface SlotMachineModalProps {
 }
 
 const ReelIcon = ({ icon: Icon, className }: { icon: React.ElementType, className?: string }) => (
-  <Icon className={cn("w-16 h-16", className)} />
+  <Icon className={cn("w-10 h-10 sm:w-14 sm:h-14", className)} />
 );
 
 const reelSymbols = [
@@ -31,7 +32,15 @@ const FALLBACK_COUPONS: Coupon[] = [
   { id: 'fallback-2', code: 'STAY20', discountPercentage: 20, isActive: true },
 ];
 
-const TWENTY_FOUR_HOURS_IN_MS = 1 * 1; // Kept short for demo testing
+const getSlotCooldownMs = () => {
+  const hours = loadSettings().slotCooldownHours ?? 24;
+  return hours * 60 * 60 * 1000;
+};
+
+const getAccountSlotKey = () => {
+  const email = (typeof localStorage !== 'undefined' && (localStorage.getItem('user_email') || localStorage.getItem('user_name'))) || 'guest';
+  return `setmystay_last_spun_${email}`;
+};
 
 export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachineModalProps) {
   const [reels, setReels] = useState([0, 0, 0]);
@@ -76,20 +85,22 @@ export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachine
   };
 
   const checkCanPlay = useCallback(() => {
-    const lastSpunTimestamp = localStorage.getItem('setmystay_last_spun_timestamp');
+    const key = getAccountSlotKey();
+    const lastSpunTimestamp = localStorage.getItem(key) || localStorage.getItem('setmystay_last_spun_timestamp');
     if (!lastSpunTimestamp) {
       setCanPlay(true);
       return;
     }
 
     const timeSinceLastSpin = Date.now() - parseInt(lastSpunTimestamp, 10);
+    const cooldownMs = getSlotCooldownMs();
 
-    if (timeSinceLastSpin >= TWENTY_FOUR_HOURS_IN_MS) {
+    if (timeSinceLastSpin >= cooldownMs) {
       setCanPlay(true);
       localStorage.removeItem('setmystay_slot_lucky_spin');
     } else {
       setCanPlay(false);
-      const remainingTime = TWENTY_FOUR_HOURS_IN_MS - timeSinceLastSpin;
+      const remainingTime = cooldownMs - timeSinceLastSpin;
       updateCooldownTime(remainingTime);
     }
   }, []);
@@ -125,7 +136,9 @@ export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachine
     setResultMessage(null);
     setLeverPulled(true);
 
-    localStorage.setItem('setmystay_last_spun_timestamp', Date.now().toString());
+    const now = Date.now().toString();
+    localStorage.setItem(getAccountSlotKey(), now);
+    localStorage.setItem('setmystay_last_spun_timestamp', now);
 
     const winProbability = 0.5; // 50% chance to win for smooth demoing
     const didWin = isLuckySpin || Math.random() < winProbability;
@@ -198,20 +211,20 @@ export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachine
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[calc(100%-2.5rem)] max-w-sm sm:max-w-md p-5 sm:p-6 rounded-3xl border border-border/80 shadow-2xl mx-auto my-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl text-center">Slot Machine Fun!</DialogTitle>
+          <DialogTitle className="text-xl sm:text-2xl text-center font-bold">Slot Machine Fun!</DialogTitle>
           {description && (
-            <DialogDescription className="text-center">
+            <DialogDescription className="text-xs sm:text-sm text-center">
               {description}
             </DialogDescription>
           )}
         </DialogHeader>
 
-        <div className="py-8 flex flex-col items-center justify-center gap-6">
-          <div className="flex items-center gap-4">
-            <div className="bg-slate-800 p-6 rounded-xl shadow-2xl border-4 border-slate-600 w-full">
-              <div className="grid grid-cols-3 gap-4 bg-slate-100 rounded-lg p-4 overflow-hidden">
+        <div className="py-4 sm:py-6 flex flex-col items-center justify-center gap-5">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="bg-slate-800 p-3 sm:p-5 rounded-2xl shadow-2xl border-4 border-slate-600 w-full">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 bg-slate-100 rounded-xl p-2 sm:p-4 overflow-hidden">
                 {reels.map((symbolIndex, i) => (
                   <div key={i} className={cn("flex items-center justify-center transition-transform duration-500 ease-in-out", isSpinning ? 'animate-bounce' : '')}>
                     <ReelIcon icon={reelSymbols[symbolIndex].icon} className={reelSymbols[symbolIndex].color} />
@@ -222,16 +235,16 @@ export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachine
 
             {/* Slot machine lever */}
             <div className="flex-shrink-0 cursor-pointer group" onClick={handleSpin}>
-              <div className="w-4 h-24 bg-slate-400 rounded-t-full relative">
+              <div className="w-3.5 h-20 sm:w-4 sm:h-24 bg-slate-400 rounded-t-full relative">
                 <div
                   className={cn(
-                    "absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-red-600 border-4 border-slate-200 shadow-inner transform transition-transform duration-300 ease-out",
-                    leverPulled ? 'translate-y-20' : 'translate-y-0',
+                    "absolute -top-1 left-1/2 -translate-x-1/2 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-600 border-4 border-slate-200 shadow-inner transform transition-transform duration-300 ease-out",
+                    leverPulled ? 'translate-y-16 sm:translate-y-20' : 'translate-y-0',
                     (isSpinning || !canPlay) && 'group-hover:translate-y-0'
                   )}
                 />
               </div>
-              <div className="w-10 h-8 bg-slate-700 rounded-b-lg -mt-1 mx-auto" />
+              <div className="w-9 h-7 sm:w-10 sm:h-8 bg-slate-700 rounded-b-lg -mt-1 mx-auto" />
             </div>
           </div>
 

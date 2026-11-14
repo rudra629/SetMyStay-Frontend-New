@@ -50,6 +50,8 @@ export interface Listing {
   ownerId: string;
   brokerStatus: 'With Broker' | 'Without Broker';
   vendorNumber?: string;
+  age?: number;
+  sharingStatus?: string;
   aadhaarCardUrl?: string;
   electricityBillUrl?: string;
   nocUrl?: string;

@@ -15,13 +15,15 @@ export function UserProfilesTable() {
     api.get("/users/").then((res) => {
       const data = Array.isArray(res.data) ? res.data : res.data?.results;
       if (!Array.isArray(data)) return;
-      const remote: UserProfile[] = data.map((u: any) => ({
-        name: u.first_name || u.name || u.username || "",
-        phone: u.phone_number || u.phone || "",
-        email: u.email || "",
-        address: u.address || "",
-        submittedAt: u.date_joined || u.created_at || "",
-      }));
+      const remote: UserProfile[] = data
+        .filter((u: any) => !u.is_staff && !u.is_superuser && u.role !== 'STAFF' && u.role !== 'ADMIN' && u.username !== 'admin')
+        .map((u: any) => ({
+          name: u.first_name || u.name || u.username || "",
+          phone: u.phone_number || u.phone || "",
+          email: u.email || "",
+          address: u.address || "",
+          submittedAt: u.date_joined || u.created_at || "",
+        }));
       const seen = new Set<string>();
       setRows([...local, ...remote].filter((r) => {
         const k = (r.email || r.phone).toLowerCase();

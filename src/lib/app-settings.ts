@@ -2,9 +2,9 @@ import { defaultPricing } from "@/lib/data";
 import { getPricingConfig } from "@/lib/api";
 
 export type ListingKind = "RENTAL" | "PG" | "ROOMMATE";
-export type AppSettings = { swipeLimit: number };
+export type AppSettings = { swipeLimit: number; slotCooldownHours: number };
 
-export const DEFAULT_SETTINGS: AppSettings = { swipeLimit: 25 };
+export const DEFAULT_SETTINGS: AppSettings = { swipeLimit: 25, slotCooldownHours: 24 };
 const KEY = "setmystay_app_settings";
 const SWIPES_KEY = "setmystay_swipes";
 const PRICING_KEY = "pricing";
@@ -31,10 +31,19 @@ export function loadSettings(): AppSettings {
     const raw = typeof localStorage !== "undefined" ? localStorage.getItem(KEY) : null;
     if (!raw) return DEFAULT_SETTINGS;
     const p = JSON.parse(raw);
-    return { swipeLimit: Number(p.swipeLimit) || DEFAULT_SETTINGS.swipeLimit };
+    return { 
+      swipeLimit: Number(p.swipeLimit) || DEFAULT_SETTINGS.swipeLimit,
+      slotCooldownHours: Number(p.slotCooldownHours) || DEFAULT_SETTINGS.slotCooldownHours,
+    };
   } catch { return DEFAULT_SETTINGS; }
 }
-export function saveSettings(s: AppSettings) { localStorage.setItem(KEY, JSON.stringify(s)); }
+export function saveSettings(s: Partial<AppSettings>) { 
+  const current = loadSettings();
+  const next = { ...current, ...s };
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(KEY, JSON.stringify(next)); 
+  }
+}
 
 export function normalizeKind(t: string | undefined | null): ListingKind {
   const v = String(t || "").toUpperCase();

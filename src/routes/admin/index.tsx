@@ -1,17 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin/")({
-  head: () => ({
-    meta: [
-      { title: "Admin Dashboard — SetMyStay" },
-      { name: "description", content: "SetMyStay admin dashboard for managing listings, staff, coupons and advertisements." },
-      { property: "og:title", content: "Admin Dashboard — SetMyStay" },
-      { property: "og:description", content: "SetMyStay admin dashboard for managing listings, staff, coupons and advertisements." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
-  component: AdminDashboard,
+    head: () => ({
+        meta: [
+            { title: "Admin Dashboard — SetMyStay" },
+            { name: "description", content: "SetMyStay admin dashboard for managing listings, staff, coupons and advertisements." },
+            { property: "og:title", content: "Admin Dashboard — SetMyStay" },
+            { property: "og:description", content: "SetMyStay admin dashboard for managing listings, staff, coupons and advertisements." },
+            { property: "og:type", content: "website" },
+            { name: "twitter:card", content: "summary_large_image" },
+        ],
+    }),
+    component: AdminDashboard,
 });
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -20,7 +20,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Eye, Building, Users, LockOpen, Home, X as XIcon, HelpCircle, CheckCircle, Trash2, ChevronLeft, ChevronRight, LogOut, XCircle, PlusCircle, Edit, ImageIcon, Ticket, Settings, KeyRound, ShieldQuestion, Mail, Phone, MapPin, FileCheck, Search, Filter, Calendar as CalendarIcon, FileText, Bell, UserPlus, Clock, User as UserIcon, Star, MessageSquare, Briefcase, Info } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { 
+import {
     getAdminProperties, updatePropertyStatus, deleteProperty,
     getCoupons, createCoupon, updateCoupon, deleteCoupon,
     getAdvertisements, createAdvertisement, updateAdvertisement, deleteAdvertisement,
@@ -62,7 +62,7 @@ const DEFAULT_ADMIN_OTP = import.meta.env.VITE_ADMIN_OTP || '16082007';
 const DEFAULT_ADMIN_QUESTION = import.meta.env.VITE_ADMIN_QUESTION || 'Who are you?';
 const DEFAULT_ADMIN_ANSWER = import.meta.env.VITE_ADMIN_ANSWER || 'rohan kholi';
 const DEFAULT_ADMIN_EMAIL = 'setmystay02@gmail.com';
-const DEFAULT_ADMIN_PHONE = '+918210552902';
+const DEFAULT_ADMIN_PHONE = '++91 79771 69550';
 const DEFAULT_ADMIN_ADDRESS = 'Office no. 01, Neelsidhi Splendour, Sector 15, CBD Belapur, Navi Mumbai, Maharashtra 400614';
 
 // Chart data generation functions
@@ -104,7 +104,7 @@ const generateYearlyData = () => {
     const years = [2022, 2023, 2024];
     return years.map(year => ({
         name: year.toString(),
-        views: Math.floor(Math.random() * 30000) + 20000 + (year-2022)*15000
+        views: Math.floor(Math.random() * 30000) + 20000 + (year - 2022) * 15000
     }));
 };
 
@@ -132,7 +132,7 @@ const PasswordChangeForm = ({ currentPassword, onSave, onClose }: { currentPassw
             return;
         }
         if (passwords.newPass.length < 6) {
-             toast({ title: 'Error', description: 'New password must be at least 6 characters.', variant: 'destructive' });
+            toast({ title: 'Error', description: 'New password must be at least 6 characters.', variant: 'destructive' });
             return;
         }
         onSave(passwords.newPass);
@@ -146,11 +146,11 @@ const PasswordChangeForm = ({ currentPassword, onSave, onClose }: { currentPassw
                 <Label htmlFor="current-password">Current Password</Label>
                 <Input id="current-password" name="current" type="password" value={passwords.current} onChange={handlePasswordChange} required />
             </div>
-             <div className="space-y-2">
+            <div className="space-y-2">
                 <Label htmlFor="new-password">New Password</Label>
                 <Input id="new-password" name="newPass" type="password" value={passwords.newPass} onChange={handlePasswordChange} required />
             </div>
-             <div className="space-y-2">
+            <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirm New Password</Label>
                 <Input id="confirm-password" name="confirmPass" type="password" value={passwords.confirmPass} onChange={handlePasswordChange} required />
             </div>
@@ -181,7 +181,7 @@ const PinChangeForm = ({ currentPin, onSave, onClose }: { currentPin: string; on
             return;
         }
         if (!/^\d{8}$/.test(pins.newPin)) {
-             toast({ title: 'Error', description: 'New PIN must be exactly 8 digits.', variant: 'destructive' });
+            toast({ title: 'Error', description: 'New PIN must be exactly 8 digits.', variant: 'destructive' });
             return;
         }
         onSave(pins.newPin);
@@ -195,7 +195,7 @@ const PinChangeForm = ({ currentPin, onSave, onClose }: { currentPin: string; on
                 <Label htmlFor="current-pin">Current PIN</Label>
                 <Input id="current-pin" name="current" type="password" value={pins.current} onChange={handlePinChange} required maxLength={8} />
             </div>
-             <div className="space-y-2">
+            <div className="space-y-2">
                 <Label htmlFor="new-pin">New PIN (8 digits)</Label>
                 <Input id="new-pin" name="newPin" type="password" value={pins.newPin} onChange={handlePinChange} required maxLength={8} />
             </div>
@@ -227,7 +227,7 @@ const SecurityQuestionChangeForm = ({ currentQuestion, currentAnswer, onSave, on
             return;
         }
         if (!security.newQuestion || !security.newAnswer) {
-             toast({ title: 'Error', description: 'New question and answer cannot be empty.', variant: 'destructive' });
+            toast({ title: 'Error', description: 'New question and answer cannot be empty.', variant: 'destructive' });
             return;
         }
         onSave(security.newQuestion, security.newAnswer);
@@ -245,7 +245,7 @@ const SecurityQuestionChangeForm = ({ currentQuestion, currentAnswer, onSave, on
                 <Label htmlFor="new-question">New Security Question</Label>
                 <Input id="new-question" name="newQuestion" type="text" value={security.newQuestion} onChange={handleSecurityChange} required />
             </div>
-             <div className="space-y-2">
+            <div className="space-y-2">
                 <Label htmlFor="new-answer">New Security Answer</Label>
                 <Input id="new-answer" name="newAnswer" type="text" value={security.newAnswer} onChange={handleSecurityChange} required />
             </div>
@@ -257,7 +257,7 @@ const SecurityQuestionChangeForm = ({ currentQuestion, currentAnswer, onSave, on
     );
 };
 
-const ContactInfoChangeForm = ({ currentEmail, currentPhone, currentAddress, onSave, onClose }: { currentEmail: string; currentPhone: string; currentAddress: string; onSave: (info: {email: string, phone: string, address: string}) => void; onClose: () => void; }) => {
+const ContactInfoChangeForm = ({ currentEmail, currentPhone, currentAddress, onSave, onClose }: { currentEmail: string; currentPhone: string; currentAddress: string; onSave: (info: { email: string, phone: string, address: string }) => void; onClose: () => void; }) => {
     const { toast } = useToast();
     const [info, setInfo] = useState({
         email: currentEmail,
@@ -287,21 +287,21 @@ const ContactInfoChangeForm = ({ currentEmail, currentPhone, currentAddress, onS
                 <Label htmlFor="email">Email Address</Label>
                 <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="email" name="email" type="email" value={info.email} onChange={handleInfoChange} required className="pl-10"/>
+                    <Input id="email" name="email" type="email" value={info.email} onChange={handleInfoChange} required className="pl-10" />
                 </div>
             </div>
-             <div className="space-y-2">
+            <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                 <div className="relative">
+                <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="phone" name="phone" type="tel" value={info.phone} onChange={handleInfoChange} required className="pl-10"/>
+                    <Input id="phone" name="phone" type="tel" value={info.phone} onChange={handleInfoChange} required className="pl-10" />
                 </div>
             </div>
-             <div className="space-y-2">
+            <div className="space-y-2">
                 <Label htmlFor="address">Office Address</Label>
-                 <div className="relative">
+                <div className="relative">
                     <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Textarea id="address" name="address" value={info.address} onChange={handleInfoChange} required className="pl-10"/>
+                    <Textarea id="address" name="address" value={info.address} onChange={handleInfoChange} required className="pl-10" />
                 </div>
             </div>
             <DialogFooter>
@@ -315,7 +315,7 @@ const ContactInfoChangeForm = ({ currentEmail, currentPhone, currentAddress, onS
 interface AdFormDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (ad: Omit<Advertisement, 'id'>, file: File | null) => void; 
+    onSave: (ad: Omit<Advertisement, 'id'>, file: File | null) => void;
     ad: Advertisement | null;
 }
 
@@ -381,7 +381,7 @@ const AdFormDialog = ({ isOpen, onClose, onSave, ad }: AdFormDialogProps) => {
                     </div>
                     <div>
                         <Label htmlFor="ad-image-upload">Image</Label>
-                        <div 
+                        <div
                             className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md cursor-pointer hover:border-primary"
                             onClick={() => document.getElementById('ad-image-upload')?.click()}
                         >
@@ -397,10 +397,10 @@ const AdFormDialog = ({ isOpen, onClose, onSave, ad }: AdFormDialogProps) => {
                                 <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 5MB</p>
                             </div>
                         </div>
-                        <Input 
-                            id="ad-image-upload" 
-                            type="file" 
-                            className="hidden" 
+                        <Input
+                            id="ad-image-upload"
+                            type="file"
+                            className="hidden"
                             accept="image/*"
                             onChange={handleImageChange}
                         />
@@ -420,10 +420,10 @@ const AdFormDialog = ({ isOpen, onClose, onSave, ad }: AdFormDialogProps) => {
 };
 
 interface CouponFormDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (coupon: Omit<Coupon, 'id'>) => void;
-  coupon: Coupon | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (coupon: Omit<Coupon, 'id'>) => void;
+    coupon: Coupon | null;
 }
 
 const CouponFormDialog = ({ isOpen, onClose, onSave, coupon }: CouponFormDialogProps) => {
@@ -478,10 +478,10 @@ const CouponFormDialog = ({ isOpen, onClose, onSave, coupon }: CouponFormDialogP
 };
 
 interface StaffFormDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (staff: Omit<StaffMember, 'id'>) => void;
-  staffMember: StaffMember | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (staff: Omit<StaffMember, 'id'>) => void;
+    staffMember: StaffMember | null;
 }
 
 const StaffFormDialog = ({ isOpen, onClose, onSave, staffMember }: StaffFormDialogProps) => {
@@ -525,13 +525,13 @@ const StaffFormDialog = ({ isOpen, onClose, onSave, staffMember }: StaffFormDial
                     </div>
                     <div>
                         <Label htmlFor="staff-password">{staffMember ? 'Reset Password' : 'Password'}</Label>
-                        <Input 
-                            id="staff-password" 
+                        <Input
+                            id="staff-password"
                             type={showPassword ? 'text' : 'password'}
-                            value={password} 
-                            onChange={(e) => setPassword(e.target.value)} 
-                            required 
-                            placeholder="Enter new password" 
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            placeholder="Enter new password"
                         />
                     </div>
                     <div className="flex items-center space-x-2">
@@ -583,7 +583,7 @@ const StaffActivityDialog = ({ isOpen, onClose, details }: { isOpen: boolean; on
                         <p className="text-center text-muted-foreground py-8">No {activityType.toLowerCase()} listings found for {staffName}.</p>
                     )}
                 </div>
-                 <DialogFooter>
+                <DialogFooter>
                     <Button variant="outline" onClick={onClose}>Close</Button>
                 </DialogFooter>
             </DialogContent>
@@ -608,7 +608,7 @@ const VendorDetailsDialog = ({ isOpen, onClose, details }: { isOpen: boolean; on
                     <DialogTitle>Properties for Vendor: {vendorNumber}</DialogTitle>
                 </DialogHeader>
                 <div className="max-h-[60vh] overflow-y-auto">
-                     {properties.length > 0 ? (
+                    {properties.length > 0 ? (
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -626,7 +626,7 @@ const VendorDetailsDialog = ({ isOpen, onClose, details }: { isOpen: boolean; on
                             </TableBody>
                         </Table>
                     ) : (
-                         <p className="text-center text-muted-foreground py-8">No properties assigned to this vendor number.</p>
+                        <p className="text-center text-muted-foreground py-8">No properties assigned to this vendor number.</p>
                     )}
                 </div>
                 <DialogFooter>
@@ -660,12 +660,12 @@ const CreateVendorDialog = ({ isOpen, onClose, onCreate }: { isOpen: boolean; on
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <Label htmlFor="vendor-number">Vendor Number</Label>
-                        <Input 
-                            id="vendor-number" 
-                            value={vendorNumber} 
-                            onChange={(e) => setVendorNumber(e.target.value)} 
+                        <Input
+                            id="vendor-number"
+                            value={vendorNumber}
+                            onChange={(e) => setVendorNumber(e.target.value)}
                             placeholder="e.g., Shreyansh2310"
-                            required 
+                            required
                         />
                     </div>
                     <DialogFooter>
@@ -687,14 +687,14 @@ interface AnalyticsData {
 function AdminDashboard() {
     const navigate = useNavigate();
     const { toast } = useToast();
-    
+
     // Auth and loading state
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
     const [isPinModalOpen, setPinModalOpen] = useState(false);
     const [isSecurityQuestionModalOpen, setSecurityQuestionModalOpen] = useState(false);
-    
+
     // Dynamic admin credentials state
     const [adminPassword, setAdminPassword] = useState('');
     const [adminOtp, setAdminOtp] = useState('');
@@ -709,7 +709,12 @@ function AdminDashboard() {
     const [roommates, setRoommates] = useState<RoommateProfile[]>([]);
     const [pricing, setPricing] = useState<PricingData | null>(null);
     const [swipeLimit, setSwipeLimit] = useState<number>(25);
-    useEffect(() => { setSwipeLimit(loadSettings().swipeLimit); }, []);
+    const [slotCooldownHours, setSlotCooldownHours] = useState<number>(24);
+    useEffect(() => {
+        const s = loadSettings();
+        setSwipeLimit(s.swipeLimit);
+        setSlotCooldownHours(s.slotCooldownHours || 24);
+    }, []);
     const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
     const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
     const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -737,11 +742,11 @@ function AdminDashboard() {
 
     const [isVendorDetailsModalOpen, setVendorDetailsModalOpen] = useState(false);
     const [vendorDetails, setVendorDetails] = useState<VendorDetails | null>(null);
-    
+
     const [isCreateVendorModalOpen, setCreateVendorModalOpen] = useState(false);
-    
+
     const [activeSettingsDialog, setActiveSettingsDialog] = useState<null | 'password' | 'pin' | 'security' | 'contact'>(null);
-    
+
     const [propertySearchTerm, setPropertySearchTerm] = useState('');
     const [vendorSearchTerm, setVendorSearchTerm] = useState('');
     const [propertyTypeFilter, setPropertyTypeFilter] = useState('all');
@@ -753,7 +758,7 @@ function AdminDashboard() {
     // Chart logic
     const chartData = useMemo(() => {
         const allItems = [...properties, ...roommates];
-        
+
         if (chartView === 'hourly' && selectedDate) {
             const data = Array.from({ length: 24 }, (_, i) => ({ name: `${i.toString().padStart(2, '0')}:00`, listings: 0 }));
             allItems.forEach(item => {
@@ -765,7 +770,7 @@ function AdminDashboard() {
             });
             return data;
         }
-        
+
         if (chartView === 'daily' && selectedDate) {
             const start = startOfWeek(selectedDate);
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -792,9 +797,9 @@ function AdminDashboard() {
             });
             return data;
         }
-        
+
         if (chartView === 'yearly') {
-            const yearsMap: {[key: string]: number} = { [new Date().getFullYear().toString()]: 0 };
+            const yearsMap: { [key: string]: number } = { [new Date().getFullYear().toString()]: 0 };
             allItems.forEach(item => {
                 if (!item.submittedAt) return;
                 const y = new Date(item.submittedAt).getFullYear().toString();
@@ -805,17 +810,34 @@ function AdminDashboard() {
 
         return [];
     }, [chartView, selectedYear, selectedDate, properties, roommates]);
-    
+
     const years = [new Date().getFullYear(), new Date().getFullYear() - 1, new Date().getFullYear() - 2];
 
     useEffect(() => {
-        const authStatus = localStorage.getItem('admin_authenticated');
-        if (authStatus !== 'true') {
-            navigate({ to: '/admin/login', replace: true });
-        } else {
-            setIsAuthenticated(true);
-            setIsLoading(false);
-        }
+        let isMounted = true;
+        const checkAuth = async () => {
+            const authStatus = localStorage.getItem('admin_authenticated');
+            const token = localStorage.getItem('access_token');
+            if (authStatus !== 'true' || !token) {
+                localStorage.removeItem('admin_authenticated');
+                navigate({ to: '/admin/login', replace: true });
+                return;
+            }
+            try {
+                await api.get('/auth/verify-admin/');
+                if (isMounted) {
+                    setIsAuthenticated(true);
+                    setIsLoading(false);
+                }
+            } catch (err) {
+                console.error("Admin verification failed:", err);
+                localStorage.removeItem('admin_authenticated');
+                localStorage.removeItem('access_token');
+                navigate({ to: '/admin/login', replace: true });
+            }
+        };
+        checkAuth();
+        return () => { isMounted = false; };
     }, [navigate]);
 
     useEffect(() => {
@@ -829,13 +851,13 @@ function AdminDashboard() {
             setAdminAddress(getFromLocalStorage('admin_address', DEFAULT_ADMIN_ADDRESS));
 
             setSelectedDate(new Date());
-            
+
             const fetchAdminData = async () => {
                 try {
                     const allData = await getAdminProperties();
 
-                   const realProperties = allData.filter(p => (p.propertyType as string) !== 'Roommate');
-                   const rawRoommates = allData.filter(p => (p.propertyType as string) === 'Roommate');
+                    const realProperties = allData.filter(p => (p.propertyType as string) !== 'Roommate');
+                    const rawRoommates = allData.filter(p => (p.propertyType as string) === 'Roommate');
 
                     const realRoommates: RoommateProfile[] = rawRoommates.map(listingToRoommateProfile);
 
@@ -850,32 +872,32 @@ function AdminDashboard() {
 
                     const dbStaff = await getStaff();
                     setStaff(dbStaff);
-                    
+
                     // 👈 Fetch Purchases
                     const dbPurchases = await getAllPurchasesAdmin();
                     setAllPurchases(dbPurchases);
 
-               } catch (error: any) { 
+                } catch (error: any) {
                     console.error("Failed to load admin data", error);
-                    
+
                     if (error.response?.status === 403) {
-                        toast({ 
-                            title: 'Permission Denied', 
-                            description: 'Your account lacks Django Admin (is_staff) privileges.', 
-                            variant: 'destructive' 
+                        toast({
+                            title: 'Permission Denied',
+                            description: 'Your account lacks Django Admin (is_staff) privileges.',
+                            variant: 'destructive'
                         });
                     } else if (error.response?.status === 401) {
-                        toast({ 
-                            title: 'Session Expired', 
-                            description: 'Please log in again.', 
-                            variant: 'destructive' 
+                        toast({
+                            title: 'Session Expired',
+                            description: 'Please log in again.',
+                            variant: 'destructive'
                         });
                         handleLogout();
                     } else {
-                        toast({ 
-                            title: 'Error', 
-                            description: 'Could not connect to database.', 
-                            variant: 'destructive' 
+                        toast({
+                            title: 'Error',
+                            description: 'Could not connect to database.',
+                            variant: 'destructive'
                         });
                     }
                 }
@@ -900,7 +922,7 @@ function AdminDashboard() {
     // 👈 Group purchases by User for the Financials View
     const groupedPurchases = useMemo(() => {
         const groups: { [email: string]: { name: string, email: string, plans: any[], totalSpend: number } } = {};
-        
+
         allPurchases.forEach(purchase => {
             if (!groups[purchase.user_email]) {
                 groups[purchase.user_email] = {
@@ -917,7 +939,7 @@ function AdminDashboard() {
             });
             groups[purchase.user_email].totalSpend += parseFloat(purchase.amount);
         });
-        
+
         return Object.values(groups).sort((a, b) => b.totalSpend - a.totalSpend); // Sort by highest spend
     }, [allPurchases]);
 
@@ -927,7 +949,7 @@ function AdminDashboard() {
             const verifiedListings = allListings.filter(l => l.verifiedBy === s.id && l.status !== 'pending');
             const approvedListings = verifiedListings.filter(l => l.status === 'approved');
             const rejectedListings = verifiedListings.filter(l => l.status === 'rejected');
-            
+
             const processingTimes = verifiedListings
                 .map(l => l.verificationTimestamp && l.submittedAt ? differenceInHours(new Date(l.verificationTimestamp), new Date(l.submittedAt)) : -1)
                 .filter(t => t >= 0);
@@ -938,15 +960,15 @@ function AdminDashboard() {
 
             return {
                 ...s,
-                stats: { 
-                    approved: approvedListings, 
-                    rejected: rejectedListings, 
-                    avgProcessingTime 
+                stats: {
+                    approved: approvedListings,
+                    rejected: rejectedListings,
+                    avgProcessingTime
                 }
             };
         });
     }, [staff, properties, roommates]);
-    
+
     const averageRating = useMemo(() => {
         if (!ratings || ratings.length === 0) return 0;
         const total = ratings.reduce((sum, r) => sum + r.rating, 0);
@@ -975,10 +997,10 @@ function AdminDashboard() {
             properties
         }));
     }, [properties, explicitVendors]);
-    
+
     const filteredVendorNumbers = useMemo(() => {
         if (!vendorSearchTerm) return vendorNumbers;
-        return vendorNumbers.filter(v => 
+        return vendorNumbers.filter(v =>
             v.vendorNumber.toLowerCase().includes(vendorSearchTerm.toLowerCase())
         );
     }, [vendorNumbers, vendorSearchTerm]);
@@ -997,11 +1019,11 @@ function AdminDashboard() {
             toast({ title: 'Error', description: 'This vendor number already exists.', variant: 'destructive' });
             return;
         }
-        
+
         const updatedVendors = [...(explicitVendors || []), vendorNumber];
         setExplicitVendors(updatedVendors);
         saveToLocalStorage('explicitVendors', updatedVendors);
-        
+
         toast({ title: 'Success', description: `Vendor "${vendorNumber}" has been created.` });
         setCreateVendorModalOpen(false);
     };
@@ -1026,20 +1048,20 @@ function AdminDashboard() {
             return matchesSearch && matchesType;
         });
     }, [properties, propertySearchTerm, propertyTypeFilter]);
-    
+
     const handleViewDetails = (item: AnyListing) => {
         setCurrentItem(item);
         setCurrentMediaIndex(0);
         setDetailsModalOpen(true);
     };
-    
+
     const handleUpdateStatus = async (id: string, type: 'PG' | 'Rental' | 'Roommate', status: 'approved' | 'rejected') => {
         try {
             const backendStatus = status === 'approved' ? 'APPROVED' : 'REJECTED';
             await updatePropertyStatus(id, backendStatus);
 
-            const updateState = (items: any[]) => items.map(item => 
-                item.id === id ? { ...item, status: status } : item
+            const updateState = (items: any[]) => items.map(item =>
+                String(item.id) === String(id) ? { ...item, status: status } : item
             );
 
             if (type === 'Roommate') {
@@ -1060,9 +1082,9 @@ function AdminDashboard() {
             await deleteProperty(id);
 
             if (type === 'Roommate') {
-                setRoommates(prev => prev.filter(r => r.id !== id));
+                setRoommates(prev => prev.filter(r => String(r.id) !== String(id)));
             } else {
-                setProperties(prev => prev.filter(p => p.id !== id));
+                setProperties(prev => prev.filter(p => String(p.id) !== String(id)));
             }
 
             setDetailsModalOpen(false);
@@ -1084,8 +1106,9 @@ function AdminDashboard() {
 
     const handleSavePricing = async () => {
         if (!swipeLimit || swipeLimit < 1) { toast({ title: "Invalid swipe limit", description: "Enter 1 or more.", variant: "destructive" }); return; }
+        if (!slotCooldownHours || slotCooldownHours < 1) { toast({ title: "Invalid slot timeout", description: "Enter 1 hour or more.", variant: "destructive" }); return; }
         saveToLocalStorage('pricing', pricing);
-        saveSettings({ swipeLimit });
+        saveSettings({ swipeLimit, slotCooldownHours });
         try {
             await api.post('/pricing/', pricing);
             toast({ title: "Pricing Updated", description: "The new prices have been saved to the database and site." });
@@ -1118,7 +1141,7 @@ function AdminDashboard() {
             formData.append('title', adData.title);
             formData.append('description', adData.description);
             formData.append('is_active', adData.isActive ? 'true' : 'false');
-            if (file) formData.append('image', file); 
+            if (file) formData.append('image', file);
 
             if (editingAd) {
                 await updateAdvertisement(editingAd.id, formData);
@@ -1127,7 +1150,7 @@ function AdminDashboard() {
                 await createAdvertisement(formData);
                 toast({ title: "Advertisement Added" });
             }
-            
+
             setAdvertisements(await getAdvertisements());
             setAdFormModalOpen(false);
             setEditingAd(null);
@@ -1140,11 +1163,11 @@ function AdminDashboard() {
             await deleteAdvertisement(adId);
             setAdvertisements(prev => prev.filter(a => a.id !== adId));
             toast({ title: "Advertisement Deleted", variant: 'destructive' });
-        } catch(error) {
+        } catch (error) {
             toast({ title: "Error deleting Ad", variant: "destructive" });
         }
     };
-    
+
     const handleOpenCouponForm = (coupon: Coupon | null) => {
         setEditingCoupon(coupon);
         setCouponFormModalOpen(true);
@@ -1162,17 +1185,17 @@ function AdminDashboard() {
             setCoupons(await getCoupons());
             setCouponFormModalOpen(false);
             setEditingCoupon(null);
-        } catch(error) {
+        } catch (error) {
             toast({ title: "Error saving Coupon. Code might already exist.", variant: "destructive" });
         }
     };
-    
+
     const handleDeleteCoupon = async (couponId: string) => {
         try {
             await deleteCoupon(couponId);
             setCoupons(prev => prev.filter(c => c.id !== couponId));
             toast({ title: "Coupon Deleted", variant: 'destructive' });
-        } catch(error) {
+        } catch (error) {
             toast({ title: "Error deleting Coupon", variant: "destructive" });
         }
     };
@@ -1207,7 +1230,7 @@ function AdminDashboard() {
             toast({ title: "Error", description: "Could not delete staff.", variant: "destructive" });
         }
     };
-    
+
     const handleViewStaffActivity = (staffName: string, activityType: string, listings: AnyListing[]) => {
         setStaffActivityDetails({ staffName, activityType, listings });
         setStaffActivityModalOpen(true);
@@ -1217,7 +1240,7 @@ function AdminDashboard() {
         setVendorDetails(vendorData);
         setVendorDetailsModalOpen(true);
     };
-    
+
     const handleSaveContactInfo = (info: { email: string, phone: string, address: string }) => {
         saveToLocalStorage('admin_email', info.email);
         saveToLocalStorage('admin_phone', info.phone);
@@ -1231,7 +1254,7 @@ function AdminDashboard() {
         const isBoolean = typeof status === 'boolean';
         const currentStatus = isBoolean ? (status ? 'active' : 'inactive') : status;
         if (!currentStatus) return null;
-    
+
         const baseClasses = "px-3 py-1 rounded-full text-xs font-semibold capitalize";
         const statusClasses: { [key: string]: string } = {
             pending: "bg-yellow-200 text-yellow-800",
@@ -1242,7 +1265,7 @@ function AdminDashboard() {
         };
         return <span className={`${baseClasses} ${statusClasses[currentStatus]}`}>{currentStatus}</span>;
     };
-    
+
     if (isLoading || !isAuthenticated) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-slate-100">
@@ -1250,13 +1273,13 @@ function AdminDashboard() {
             </div>
         );
     }
-    
+
     return (
         <div className="bg-slate-50 min-h-screen">
             <header className="bg-white shadow-sm">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-4 sm:py-2">
-                     <h1 className="text-2xl font-bold text-slate-800">SetMyStay Admin</h1>
-                     <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-2xl font-bold text-slate-800">SetMyStay Admin</h1>
+                    <div className="flex items-center gap-2 flex-wrap">
                         <Button asChild>
                             <Link to="/">
                                 <Home className="w-4 h-4 mr-2" />
@@ -1273,314 +1296,186 @@ function AdminDashboard() {
                             <DropdownMenuContent>
                                 <DropdownMenuLabel>Admin Account Security</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => setPasswordModalOpen(true)}>Change Password</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setPinModalOpen(true)}>Change PIN</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSecurityQuestionModalOpen(true)}>Change Security Question</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setPasswordModalOpen(true)}>Change Password</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setPinModalOpen(true)}>Change PIN</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSecurityQuestionModalOpen(true)}>Change Security Question</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                         <Button variant="outline" onClick={handleLogout}>
                             <LogOut className="w-4 h-4 mr-2" />
                             Logout
                         </Button>
-                     </div>
+                    </div>
                 </div>
             </header>
 
             <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Tabs defaultValue="dashboard">
-                <div className="overflow-x-auto">
-                    <TabsList className="mb-8 whitespace-nowrap">
-                        <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                        <TabsTrigger value="listings">Listings</TabsTrigger>
-                        <TabsTrigger value="management">Management</TabsTrigger>
-                        <TabsTrigger value="staff">Staff</TabsTrigger>
-                        {/* 👇 New Purchases Tab 👇 */}
-                        <TabsTrigger value="purchases">Purchases</TabsTrigger>
-                        <TabsTrigger value="users">Users</TabsTrigger>
-                        <TabsTrigger value="appearance">Appearance</TabsTrigger>
-                    </TabsList>
-                </div>
-                
-                <TabsContent value="dashboard">
-                    <Card className="mb-8">
-                        <CardHeader>
-                            <CardTitle className="text-2xl">Platform Overview</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                                <div className="bg-blue-50 p-4 rounded-lg flex items-center justify-between">
-                                    <div><p className="text-sm font-medium text-blue-700">Total Properties</p><p className="text-2xl font-bold text-blue-900">{properties.length}</p></div>
-                                    <Building className="text-3xl text-blue-400 w-8 h-8"/>
-                                </div>
-                                <div className="bg-purple-50 p-4 rounded-lg flex items-center justify-between">
-                                    <div><p className="text-sm font-medium text-purple-700">Total Roommates</p><p className="text-2xl font-bold text-purple-900">{roommates.length}</p></div>
-                                    <Users className="text-3xl text-purple-400 w-8 h-8"/>
-                                </div>
-                                <div className="bg-yellow-50 p-4 rounded-lg flex items-center justify-between">
-                                    <div><p className="text-sm font-medium text-yellow-700">Pending Approvals</p><p className="text-2xl font-bold text-yellow-900">{pendingListings.length}</p></div>
-                                    <Clock className="text-3xl text-yellow-400 w-8 h-8"/>
-                                </div>
-                                <div className="bg-green-50 p-4 rounded-lg flex items-center justify-between">
-                                    <div><p className="text-sm font-medium text-green-700">Live Listings</p><p className="text-2xl font-bold text-green-900">{properties.filter(p => p.status === 'approved').length + roommates.filter(r => r.status === 'approved').length}</p></div>
-                                    <CheckCircle className="text-3xl text-green-400 w-8 h-8"/>
-                                </div>
-                            </div>
-                            
-                            <div className="mt-6">
-                                <Tabs value={chartView} onValueChange={setChartView} className="w-full">
-                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                                        <h3 className="text-xl font-semibold text-slate-800">New Listings Over Time</h3>
-                                        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-                                            {(chartView === 'daily' || chartView === 'hourly') && (
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                            variant={"outline"}
-                                                            className={cn("w-full sm:w-[240px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
-                                                        >
-                                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                                            {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0 z-50" align="start">
-                                                        <Calendar mode="single" selected={selectedDate ?? undefined} onSelect={(d) => setSelectedDate(d ?? null)} initialFocus />
-                                                    </PopoverContent>
-                                                </Popover>
-                                            )}
-                                            {(chartView === 'monthly' || chartView === 'weekly') && (
-                                                <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
-                                                    <SelectTrigger className="w-full sm:w-[120px]">
-                                                        <SelectValue placeholder="Select year" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {years.map(year => <SelectItem key={year} value={year.toString()}>{year}</SelectItem>)}
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                            <div className="overflow-x-auto">
-                                                <TabsList className="whitespace-nowrap">
-                                                    <TabsTrigger value="hourly">Hourly</TabsTrigger>
-                                                    <TabsTrigger value="daily">Daily</TabsTrigger>
-                                                    <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                                                    <TabsTrigger value="yearly">Yearly</TabsTrigger>
-                                                </TabsList>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="h-80">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={chartData}>
-                                                <CartesianGrid strokeDasharray="3 3" />
-                                                <XAxis dataKey="name" />
-                                                <YAxis allowDecimals={false} />
-                                                <Tooltip formatter={(value) => [value, 'New Listings']} />
-                                                <Bar dataKey="listings" fill="#4582EF" radius={[4, 4, 0, 0]} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </Tabs>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                <Tabs defaultValue="dashboard">
+                    <div className="overflow-x-auto">
+                        <TabsList className="mb-8 whitespace-nowrap">
+                            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                            <TabsTrigger value="listings">Listings</TabsTrigger>
+                            <TabsTrigger value="management">Management</TabsTrigger>
+                            <TabsTrigger value="staff">Staff</TabsTrigger>
+                            {/* 👇 New Purchases Tab 👇 */}
+                            <TabsTrigger value="purchases">Purchases</TabsTrigger>
+                            <TabsTrigger value="users">Users</TabsTrigger>
+                            <TabsTrigger value="appearance">Appearance</TabsTrigger>
+                        </TabsList>
+                    </div>
 
-                <TabsContent value="listings">
-                    <Card className="mb-8">
-                        <CardHeader><CardTitle className="text-2xl">Pending Listings</CardTitle></CardHeader>
-                        <CardContent>
-                            {pendingListings.length > 0 ? (
-                                pendingListings.map(item => (
-                                    <div key={item.id} className="border-l-4 border-yellow-400 bg-slate-50 p-4 rounded-md mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                                        <div className="w-full">
-                                            <p className="font-semibold">{'title' in item ? item.title : item.ownerName} <span className="text-xs font-medium text-slate-500">({item.propertyType})</span></p>
-                                            <p className="text-sm text-slate-600">{item.locality}</p>
-                                        </div>
-                                        <Button onClick={() => handleViewDetails(item)} className="w-full sm:w-auto">View Details</Button>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-slate-500">No pending listings.</p>
-                            )}
-                        </CardContent>
-                    </Card>
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <Card>
+                    <TabsContent value="dashboard">
+                        <Card className="mb-8">
                             <CardHeader>
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                    <div>
-                                        <CardTitle className="text-2xl">All Properties</CardTitle>
-                                        <CardDescription>Search and filter all properties.</CardDescription>
-                                    </div>
-                                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                                        <div className="relative w-full sm:w-auto">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                            <Input 
-                                                placeholder="Search by title..." 
-                                                value={propertySearchTerm}
-                                                onChange={(e) => setPropertySearchTerm(e.target.value)}
-                                                className="pl-10 w-full sm:w-48"
-                                            />
-                                        </div>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="outline" size="icon">
-                                                    <Filter className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuLabel>Filter by Type</DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem onSelect={() => setPropertyTypeFilter('all')}>All</DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => setPropertyTypeFilter('PG')}>PG</DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => setPropertyTypeFilter('Rental')}>Rental</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </div>
+                                <CardTitle className="text-2xl">Platform Overview</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Title</TableHead><TableHead>Type</TableHead><TableHead>Vendor #</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {filteredProperties.map(p => (
-                                            <TableRow key={p.id}>
-                                                <TableCell className="font-medium">{p.title}</TableCell>
-                                                <TableCell>{p.propertyType}</TableCell>
-                                                <TableCell>{p.vendorNumber || 'N/A'}</TableCell>
-                                                <TableCell><StatusBadge status={p.status} /></TableCell>
-                                                <TableCell><Button variant="outline" size="sm" onClick={() => handleViewDetails(p)}>View</Button></TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader><CardTitle className="text-2xl">All Roommates</CardTitle></CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Name</TableHead><TableHead>Budget</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {roommates.map(r => (
-                                            <TableRow key={r.id}>
-                                                <TableCell className="font-medium">{r.ownerName}</TableCell>
-                                                <TableCell>₹{r.rent.toLocaleString()}</TableCell>
-                                                <TableCell><StatusBadge status={r.status} /></TableCell>
-                                                <TableCell><Button variant="outline" size="sm" onClick={() => handleViewDetails(r)}>View</Button></TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </TabsContent>
-                
-                <TabsContent value="management">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div className="space-y-8">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-2xl">Pricing Management</CardTitle>
-                                    <CardDescription>Update the pricing for unlocks and listings. Changes will reflect on the main site immediately.</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    {pricing && (
-                                        <div className="space-y-6">
-                                            <div>
-                                                <h4 className="font-semibold mb-4 text-lg">Unlock Plans</h4>
-                                                <div className="space-y-4">
-                                                    {Object.entries(pricing.unlocks).map(([plan, price]) => (
-                                                        <div key={plan} className="flex items-center gap-4">
-                                                            <Label htmlFor={`price-unlock-${plan}`} className="w-28 capitalize">{plan} Unlock{plan !== '1' && plan !== 'unlimited' ? 's' : ''}</Label>
-                                                            <Input id={`price-unlock-${plan}`} type="number" value={price} onChange={(e) => handlePriceChange('unlocks', plan, parseInt(e.target.value))} className="max-w-xs" />
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h4 className="font-semibold mb-4 text-lg">Listing Plans</h4>
-                                                <div className="space-y-4">
-                                                    {Object.entries(pricing.listings).map(([plan, price]) => (
-                                                        <div key={plan} className="flex items-center gap-4">
-                                                            <Label htmlFor={`price-listing-${plan}`} className="w-28 capitalize">{plan} Listing</Label>
-                                                            <Input id={`price-listing-${plan}`} type="number" value={price} onChange={(e) => handlePriceChange('listings', plan, parseInt(e.target.value))} className="max-w-xs" />
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h4 className="font-semibold mb-4 text-lg">Roommate Swipes</h4>
-                                                <div className="flex items-center gap-4">
-                                                    <Label htmlFor="swipe-limit" className="w-28">Swipes per account</Label>
-                                                    <Input id="swipe-limit" type="number" min={1} value={swipeLimit} onChange={(e) => setSwipeLimit(parseInt(e.target.value))} className="max-w-xs" />
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                                    <div className="bg-blue-50 p-4 rounded-lg flex items-center justify-between">
+                                        <div><p className="text-sm font-medium text-blue-700">Total Properties</p><p className="text-2xl font-bold text-blue-900">{properties.length}</p></div>
+                                        <Building className="text-3xl text-blue-400 w-8 h-8" />
+                                    </div>
+                                    <div className="bg-purple-50 p-4 rounded-lg flex items-center justify-between">
+                                        <div><p className="text-sm font-medium text-purple-700">Total Roommates</p><p className="text-2xl font-bold text-purple-900">{roommates.length}</p></div>
+                                        <Users className="text-3xl text-purple-400 w-8 h-8" />
+                                    </div>
+                                    <div className="bg-yellow-50 p-4 rounded-lg flex items-center justify-between">
+                                        <div><p className="text-sm font-medium text-yellow-700">Pending Approvals</p><p className="text-2xl font-bold text-yellow-900">{pendingListings.length}</p></div>
+                                        <Clock className="text-3xl text-yellow-400 w-8 h-8" />
+                                    </div>
+                                    <div className="bg-green-50 p-4 rounded-lg flex items-center justify-between">
+                                        <div><p className="text-sm font-medium text-green-700">Live Listings</p><p className="text-2xl font-bold text-green-900">{properties.filter(p => p.status === 'approved').length + roommates.filter(r => r.status === 'approved').length}</p></div>
+                                        <CheckCircle className="text-3xl text-green-400 w-8 h-8" />
+                                    </div>
+                                </div>
+
+                                <div className="mt-6">
+                                    <Tabs value={chartView} onValueChange={setChartView} className="w-full">
+                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                                            <h3 className="text-xl font-semibold text-slate-800">New Listings Over Time</h3>
+                                            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+                                                {(chartView === 'daily' || chartView === 'hourly') && (
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <Button
+                                                                variant={"outline"}
+                                                                className={cn("w-full sm:w-[240px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
+                                                            >
+                                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-0 z-50" align="start">
+                                                            <Calendar mode="single" selected={selectedDate ?? undefined} onSelect={(d) => setSelectedDate(d ?? null)} initialFocus />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                )}
+                                                {(chartView === 'monthly' || chartView === 'weekly') && (
+                                                    <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
+                                                        <SelectTrigger className="w-full sm:w-[120px]">
+                                                            <SelectValue placeholder="Select year" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {years.map(year => <SelectItem key={year} value={year.toString()}>{year}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                )}
+                                                <div className="overflow-x-auto">
+                                                    <TabsList className="whitespace-nowrap">
+                                                        <TabsTrigger value="hourly">Hourly</TabsTrigger>
+                                                        <TabsTrigger value="daily">Daily</TabsTrigger>
+                                                        <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                                                        <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                                                    </TabsList>
                                                 </div>
                                             </div>
                                         </div>
-                                    )}
-                                    <div className="mt-6 flex justify-end">
-                                        <Button onClick={handleSavePricing}>Save Prices</Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                        <div className="h-80">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={chartData}>
+                                                    <CartesianGrid strokeDasharray="3 3" />
+                                                    <XAxis dataKey="name" />
+                                                    <YAxis allowDecimals={false} />
+                                                    <Tooltip formatter={(value) => [value, 'New Listings']} />
+                                                    <Bar dataKey="listings" fill="#4582EF" radius={[4, 4, 0, 0]} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </Tabs>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="listings">
+                        <Card className="mb-8">
+                            <CardHeader><CardTitle className="text-2xl">Pending Listings</CardTitle></CardHeader>
+                            <CardContent>
+                                {pendingListings.length > 0 ? (
+                                    pendingListings.map(item => (
+                                        <div key={item.id} className="border-l-4 border-yellow-400 bg-slate-50 p-4 rounded-md mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                            <div className="w-full">
+                                                <p className="font-semibold">{'title' in item ? item.title : item.ownerName} <span className="text-xs font-medium text-slate-500">({item.propertyType})</span></p>
+                                                <p className="text-sm text-slate-600">{item.locality}</p>
+                                            </div>
+                                            <Button onClick={() => handleViewDetails(item)} className="w-full sm:w-auto">View Details</Button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-slate-500">No pending listings.</p>
+                                )}
+                            </CardContent>
+                        </Card>
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                             <Card>
-                                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                    <div>
-                                        <CardTitle className="text-2xl">Contact Information</CardTitle>
-                                        <CardDescription>This info is displayed in the website footer.</CardDescription>
+                                <CardHeader>
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                        <div>
+                                            <CardTitle className="text-2xl">All Properties</CardTitle>
+                                            <CardDescription>Search and filter all properties.</CardDescription>
+                                        </div>
+                                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                                            <div className="relative w-full sm:w-auto">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    placeholder="Search by title..."
+                                                    value={propertySearchTerm}
+                                                    onChange={(e) => setPropertySearchTerm(e.target.value)}
+                                                    className="pl-10 w-full sm:w-48"
+                                                />
+                                            </div>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="outline" size="icon">
+                                                        <Filter className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuLabel>Filter by Type</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onSelect={() => setPropertyTypeFilter('all')}>All</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => setPropertyTypeFilter('PG')}>PG</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => setPropertyTypeFilter('Rental')}>Rental</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </div>
-                                    <Button onClick={() => setActiveSettingsDialog('contact')}>
-                                        <Edit className="mr-2 h-4 w-4" /> Edit
-                                    </Button>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-2 text-sm">
-                                        <p className="flex items-center gap-2"><Mail className="w-4 h-4 text-muted-foreground"/> {adminEmail}</p>
-                                        <p className="flex items-center gap-2"><Phone className="w-4 h-4 text-muted-foreground"/> {adminPhone}</p>
-                                        <p className="flex items-start gap-2"><MapPin className="w-4 h-4 text-muted-foreground mt-1"/> {adminAddress}</p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                        <div className="space-y-8">
-                            <Card>
-                                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                    <div>
-                                        <CardTitle className="text-2xl">Coupon Code Management</CardTitle>
-                                        <CardDescription>Create and manage discount coupons.</CardDescription>
-                                    </div>
-                                    <Button onClick={() => handleOpenCouponForm(null)} className="w-full sm:w-auto">
-                                        <PlusCircle className="mr-2 h-4 w-4" /> Add
-                                    </Button>
                                 </CardHeader>
                                 <CardContent>
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Code</TableHead><TableHead>Discount</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
+                                                <TableHead>Title</TableHead><TableHead>Type</TableHead><TableHead>Vendor #</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {coupons.map(coupon => (
-                                                <TableRow key={coupon.id}>
-                                                    <TableCell className="font-medium">{coupon.code}</TableCell>
-                                                    <TableCell>{coupon.discountPercentage}%</TableCell>
-                                                    <TableCell><StatusBadge status={coupon.isActive} /></TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button variant="ghost" size="icon" onClick={() => handleOpenCouponForm(coupon)}><Edit className="h-4 w-4" /></Button>
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
-                                                            <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete Coupon?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the coupon.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteCoupon(coupon.id)}>Confirm</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
-                                                        </AlertDialog>
-                                                    </TableCell>
+                                            {filteredProperties.map(p => (
+                                                <TableRow key={p.id}>
+                                                    <TableCell className="font-medium">{p.title}</TableCell>
+                                                    <TableCell>{p.propertyType}</TableCell>
+                                                    <TableCell>{p.vendorNumber || 'N/A'}</TableCell>
+                                                    <TableCell><StatusBadge status={p.status} /></TableCell>
+                                                    <TableCell><Button variant="outline" size="sm" onClick={() => handleViewDetails(p)}>View</Button></TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -1588,34 +1483,21 @@ function AdminDashboard() {
                                 </CardContent>
                             </Card>
                             <Card>
-                                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                    <div>
-                                        <CardTitle className="text-2xl">Pop-up Ads</CardTitle>
-                                        <CardDescription>Manage pop-up advertisements.</CardDescription>
-                                    </div>
-                                    <Button onClick={() => handleOpenAdForm(null)} className="w-full sm:w-auto">
-                                        <PlusCircle className="mr-2 h-4 w-4" /> Add New
-                                    </Button>
-                                </CardHeader>
+                                <CardHeader><CardTitle className="text-2xl">All Roommates</CardTitle></CardHeader>
                                 <CardContent>
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Title</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
+                                                <TableHead>Name</TableHead><TableHead>Budget</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {advertisements.map(ad => (
-                                                <TableRow key={ad.id}>
-                                                    <TableCell className="font-medium">{ad.title}</TableCell>
-                                                    <TableCell><StatusBadge status={ad.isActive} /></TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button variant="ghost" size="icon" onClick={() => handleOpenAdForm(ad)}><Edit className="h-4 w-4" /></Button>
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
-                                                            <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete Ad?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this advertisement.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteAd(ad.id)}>Confirm</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
-                                                        </AlertDialog>
-                                                    </TableCell>
+                                            {roommates.map(r => (
+                                                <TableRow key={r.id}>
+                                                    <TableCell className="font-medium">{r.ownerName}</TableCell>
+                                                    <TableCell>₹{r.rent.toLocaleString()}</TableCell>
+                                                    <TableCell><StatusBadge status={r.status} /></TableCell>
+                                                    <TableCell><Button variant="outline" size="sm" onClick={() => handleViewDetails(r)}>View</Button></TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -1623,131 +1505,277 @@ function AdminDashboard() {
                                 </CardContent>
                             </Card>
                         </div>
-                    </div>
-                </TabsContent>
+                    </TabsContent>
 
-                <TabsContent value="staff">
-                    <Card>
-                        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                            <div>
-                                <CardTitle className="text-2xl">Staff Management</CardTitle>
-                                <CardDescription>Add, edit, and monitor staff performance.</CardDescription>
-                            </div>
-                            <Button onClick={() => handleOpenStaffForm(null)} className="w-full sm:w-auto">
-                                <UserPlus className="mr-2 h-4 w-4" /> Add New Staff
-                            </Button>
-                        </CardHeader>
-                        <CardContent>
-                             <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Name</TableHead>
-                                            <TableHead>User ID</TableHead>
-                                            <TableHead>Approved</TableHead>
-                                            <TableHead>Rejected</TableHead>
-                                            <TableHead>Avg. Processing Time</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {staff.map((s: any) => (
-                                            <TableRow key={s.id}>
-                                                <TableCell className="font-medium">{s.name}</TableCell>
-                                                <TableCell>{s.userId}</TableCell>
-                                                <TableCell className="text-green-600 font-semibold">
-                                                    {s.approved_count || 0}
-                                                </TableCell>
-                                                <TableCell className="text-red-600 font-semibold">
-                                                    {s.rejected_count || 0}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {s.avg_processing_hours !== 'N/A' && s.avg_processing_hours !== undefined ? `${s.avg_processing_hours} hours` : 'N/A'}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <Button variant="ghost" size="icon" onClick={() => handleOpenStaffForm(s)}><Edit className="h-4 w-4" /></Button>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader><AlertDialogTitle>Delete Staff Member?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the staff member's account.</AlertDialogDescription></AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDeleteStaff(s.id)}>Confirm</AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="users">
-                    <UserProfilesTable />
-                </TabsContent>
-
-                <TabsContent value="appearance">
-                    <ThemeCustomizer />
-                    <DemoDataCard />
-                </TabsContent>
-
-                {/* 👇 NEW PURCHASES TAB CONTENT 👇 */}
-                <TabsContent value="purchases">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-2xl">Financial Overview & User Spend</CardTitle>
-                            <CardDescription>Track all plan purchases, grouped by user, including lifetime expenditure.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>User</TableHead>
-                                            <TableHead>Email</TableHead>
-                                            <TableHead>Plans Bought</TableHead>
-                                            <TableHead className="text-right">Total Lifetime Spend</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {groupedPurchases.map((user, idx) => (
-                                            <TableRow key={idx}>
-                                                <TableCell className="font-medium">{user.name}</TableCell>
-                                                <TableCell>{user.email}</TableCell>
-                                                <TableCell>
-                                                    <div className="space-y-1">
-                                                        {user.plans.map((p, i) => (
-                                                            <div key={i} className="text-sm bg-slate-100 px-2 py-1 rounded inline-block mr-2 mb-1 border">
-                                                                {p.plan} <span className="text-muted-foreground ml-1">(₹{p.price})</span>
+                    <TabsContent value="management">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div className="space-y-8">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-2xl">Pricing Management</CardTitle>
+                                        <CardDescription>Update the pricing for unlocks and listings. Changes will reflect on the main site immediately.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {pricing && (
+                                            <div className="space-y-6">
+                                                <div>
+                                                    <h4 className="font-semibold mb-4 text-lg">Unlock Plans</h4>
+                                                    <div className="space-y-4">
+                                                        {Object.entries(pricing.unlocks).map(([plan, price]) => (
+                                                            <div key={plan} className="flex items-center gap-4">
+                                                                <Label htmlFor={`price-unlock-${plan}`} className="w-28 capitalize">{plan} Unlock{plan !== '1' && plan !== 'unlimited' ? 's' : ''}</Label>
+                                                                <Input id={`price-unlock-${plan}`} type="number" value={price} onChange={(e) => handlePriceChange('unlocks', plan, parseInt(e.target.value))} className="max-w-xs" />
                                                             </div>
                                                         ))}
                                                     </div>
-                                                </TableCell>
-                                                <TableCell className="text-right font-bold text-primary text-lg">
-                                                    ₹{user.totalSpend.toLocaleString()}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                        {groupedPurchases.length === 0 && (
-                                            <TableRow>
-                                                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                                                    No purchases recorded yet.
-                                                </TableCell>
-                                            </TableRow>
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold mb-4 text-lg">Listing Plans</h4>
+                                                    <div className="space-y-4">
+                                                        {Object.entries(pricing.listings).map(([plan, price]) => (
+                                                            <div key={plan} className="flex items-center gap-4">
+                                                                <Label htmlFor={`price-listing-${plan}`} className="w-28 capitalize">{plan} Listing</Label>
+                                                                <Input id={`price-listing-${plan}`} type="number" value={price} onChange={(e) => handlePriceChange('listings', plan, parseInt(e.target.value))} className="max-w-xs" />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold mb-4 text-lg">Roommate Swipes</h4>
+                                                    <div className="flex items-center gap-4">
+                                                        <Label htmlFor="swipe-limit" className="w-28">Swipes per account</Label>
+                                                        <Input id="swipe-limit" type="number" min={1} value={swipeLimit} onChange={(e) => setSwipeLimit(parseInt(e.target.value))} className="max-w-xs" />
+                                                    </div>
+                                                    <div className="flex items-center gap-4 mt-3">
+                                                        <Label htmlFor="slot-cooldown" className="w-28">Slot Timeout (Hours)</Label>
+                                                        <Input id="slot-cooldown" type="number" min={1} value={slotCooldownHours} onChange={(e) => setSlotCooldownHours(parseInt(e.target.value) || 24)} className="max-w-xs" />
+                                                    </div>
+                                                </div>
+                                            </div>
                                         )}
-                                    </TableBody>
-                                </Table>
+                                        <div className="mt-6 flex justify-end">
+                                            <Button onClick={handleSavePricing}>Save Prices</Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <div>
+                                            <CardTitle className="text-2xl">Contact Information</CardTitle>
+                                            <CardDescription>This info is displayed in the website footer.</CardDescription>
+                                        </div>
+                                        <Button onClick={() => setActiveSettingsDialog('contact')}>
+                                            <Edit className="mr-2 h-4 w-4" /> Edit
+                                        </Button>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-2 text-sm">
+                                            <p className="flex items-center gap-2"><Mail className="w-4 h-4 text-muted-foreground" /> {adminEmail}</p>
+                                            <p className="flex items-center gap-2"><Phone className="w-4 h-4 text-muted-foreground" /> {adminPhone}</p>
+                                            <p className="flex items-start gap-2"><MapPin className="w-4 h-4 text-muted-foreground mt-1" /> {adminAddress}</p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
                             </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+                            <div className="space-y-8">
+                                <Card>
+                                    <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <div>
+                                            <CardTitle className="text-2xl">Coupon Code Management</CardTitle>
+                                            <CardDescription>Create and manage discount coupons.</CardDescription>
+                                        </div>
+                                        <Button onClick={() => handleOpenCouponForm(null)} className="w-full sm:w-auto">
+                                            <PlusCircle className="mr-2 h-4 w-4" /> Add
+                                        </Button>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Code</TableHead><TableHead>Discount</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {coupons.map(coupon => (
+                                                    <TableRow key={coupon.id}>
+                                                        <TableCell className="font-medium">{coupon.code}</TableCell>
+                                                        <TableCell>{coupon.discountPercentage}%</TableCell>
+                                                        <TableCell><StatusBadge status={coupon.isActive} /></TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button variant="ghost" size="icon" onClick={() => handleOpenCouponForm(coupon)}><Edit className="h-4 w-4" /></Button>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete Coupon?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the coupon.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteCoupon(coupon.id)}>Confirm</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <div>
+                                            <CardTitle className="text-2xl">Pop-up Ads</CardTitle>
+                                            <CardDescription>Manage pop-up advertisements.</CardDescription>
+                                        </div>
+                                        <Button onClick={() => handleOpenAdForm(null)} className="w-full sm:w-auto">
+                                            <PlusCircle className="mr-2 h-4 w-4" /> Add New
+                                        </Button>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Title</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {advertisements.map(ad => (
+                                                    <TableRow key={ad.id}>
+                                                        <TableCell className="font-medium">{ad.title}</TableCell>
+                                                        <TableCell><StatusBadge status={ad.isActive} /></TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button variant="ghost" size="icon" onClick={() => handleOpenAdForm(ad)}><Edit className="h-4 w-4" /></Button>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete Ad?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this advertisement.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteAd(ad.id)}>Confirm</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="staff">
+                        <Card>
+                            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div>
+                                    <CardTitle className="text-2xl">Staff Management</CardTitle>
+                                    <CardDescription>Add, edit, and monitor staff performance.</CardDescription>
+                                </div>
+                                <Button onClick={() => handleOpenStaffForm(null)} className="w-full sm:w-auto">
+                                    <UserPlus className="mr-2 h-4 w-4" /> Add New Staff
+                                </Button>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Name</TableHead>
+                                                <TableHead>User ID</TableHead>
+                                                <TableHead>Approved</TableHead>
+                                                <TableHead>Rejected</TableHead>
+                                                <TableHead>Avg. Processing Time</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {staff.map((s: any) => (
+                                                <TableRow key={s.id}>
+                                                    <TableCell className="font-medium">{s.name}</TableCell>
+                                                    <TableCell>{s.userId}</TableCell>
+                                                    <TableCell className="text-green-600 font-semibold">
+                                                        {s.approved_count || 0}
+                                                    </TableCell>
+                                                    <TableCell className="text-red-600 font-semibold">
+                                                        {s.rejected_count || 0}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {s.avg_processing_hours !== 'N/A' && s.avg_processing_hours !== undefined ? `${s.avg_processing_hours} hours` : 'N/A'}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button variant="ghost" size="icon" onClick={() => handleOpenStaffForm(s)}><Edit className="h-4 w-4" /></Button>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader><AlertDialogTitle>Delete Staff Member?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the staff member's account.</AlertDialogDescription></AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                    <AlertDialogAction onClick={() => handleDeleteStaff(s.id)}>Confirm</AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="users">
+                        <UserProfilesTable />
+                    </TabsContent>
+
+                    <TabsContent value="appearance">
+                        <ThemeCustomizer />
+                        <DemoDataCard />
+                    </TabsContent>
+
+                    {/* 👇 NEW PURCHASES TAB CONTENT 👇 */}
+                    <TabsContent value="purchases">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-2xl">Financial Overview & User Spend</CardTitle>
+                                <CardDescription>Track all plan purchases, grouped by user, including lifetime expenditure.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>User</TableHead>
+                                                <TableHead>Email</TableHead>
+                                                <TableHead>Plans Bought</TableHead>
+                                                <TableHead className="text-right">Total Lifetime Spend</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {groupedPurchases.map((user, idx) => (
+                                                <TableRow key={idx}>
+                                                    <TableCell className="font-medium">{user.name}</TableCell>
+                                                    <TableCell>{user.email}</TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-wrap gap-2 py-1">
+                                                            {user.plans.map((p, i) => (
+                                                                <span key={i} className="inline-flex items-center gap-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 px-2.5 py-1 rounded-full border border-slate-300 shadow-xs">
+                                                                    <span>{p.plan}</span>
+                                                                    <span className="font-semibold text-primary">₹{p.price}</span>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-bold text-primary text-lg">
+                                                        ₹{user.totalSpend.toLocaleString()}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                            {groupedPurchases.length === 0 && (
+                                                <TableRow>
+                                                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                                        No purchases recorded yet.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
             </main>
 
             {/* Ad Form Modal */}
@@ -1757,7 +1785,7 @@ function AdminDashboard() {
                 onSave={handleSaveAd}
                 ad={editingAd}
             />
-            
+
             {/* Coupon Form Modal */}
             <CouponFormDialog
                 isOpen={isCouponFormModalOpen}
@@ -1765,7 +1793,7 @@ function AdminDashboard() {
                 onSave={handleSaveCoupon}
                 coupon={editingCoupon}
             />
-            
+
             {/* Staff Form Modal */}
             <StaffFormDialog
                 isOpen={isStaffFormModalOpen}
@@ -1775,7 +1803,7 @@ function AdminDashboard() {
             />
 
             {/* Staff Activity Modal */}
-            <StaffActivityDialog 
+            <StaffActivityDialog
                 isOpen={isStaffActivityModalOpen}
                 onClose={() => setStaffActivityModalOpen(false)}
                 details={staffActivityDetails}
@@ -1787,7 +1815,7 @@ function AdminDashboard() {
                 onClose={() => setVendorDetailsModalOpen(false)}
                 details={vendorDetails}
             />
-            
+
             <CreateVendorDialog
                 isOpen={isCreateVendorModalOpen}
                 onClose={() => setCreateVendorModalOpen(false)}
@@ -1802,76 +1830,86 @@ function AdminDashboard() {
                     </DialogHeader>
                     {currentItem && (
                         <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
-                             {Array.isArray(currentItem.images) && currentItem.images.length > 0 && (
+                            {Array.isArray(currentItem.images) && currentItem.images.length > 0 && (
                                 <div className="relative w-full h-64 bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center">
-                                     {isVideoUrl(currentItem.images[currentMediaIndex]) ? (
-                                        <video 
+                                    {isVideoUrl(currentItem.images[currentMediaIndex]) ? (
+                                        <video
                                             key={currentItem.images[currentMediaIndex]}
-                                            src={currentItem.images[currentMediaIndex]} 
-                                            controls 
+                                            src={currentItem.images[currentMediaIndex]}
+                                            controls
                                             playsInline
                                             className="w-full h-full object-contain"
                                         />
-                                     ) : (
-                                        <img 
-                                            src={currentItem.images[currentMediaIndex]} 
-                                            alt="Listing Media" 
+                                    ) : (
+                                        <img
+                                            src={currentItem.images[currentMediaIndex]}
+                                            alt="Listing Media"
                                             className="absolute inset-0 h-full w-full object-contain p-2"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80";
+                                            }}
                                         />
-                                     )}
-                                     {currentItem.images.length > 1 && (
-                                         <>
-                                            <Button size="icon" variant="ghost" className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/40 hover:bg-black/60 z-10" onClick={() => setCurrentMediaIndex(i => Math.max(0, i-1))} disabled={currentMediaIndex === 0}><ChevronLeft /></Button>
-                                            <Button size="icon" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/40 hover:bg-black/60 z-10" onClick={() => setCurrentMediaIndex(i => Math.min(currentItem.images.length - 1, i+1))} disabled={currentMediaIndex === currentItem.images.length - 1}><ChevronRight /></Button>
-                                         </>
-                                     )}
+                                    )}
+                                    {currentItem.images.length > 1 && (
+                                        <>
+                                            <Button size="icon" variant="ghost" className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/40 hover:bg-black/60 z-10" onClick={() => setCurrentMediaIndex(i => Math.max(0, i - 1))} disabled={currentMediaIndex === 0}><ChevronLeft /></Button>
+                                            <Button size="icon" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/40 hover:bg-black/60 z-10" onClick={() => setCurrentMediaIndex(i => Math.min(currentItem.images.length - 1, i + 1))} disabled={currentMediaIndex === currentItem.images.length - 1}><ChevronRight /></Button>
+                                        </>
+                                    )}
                                 </div>
                             )}
 
-                             {Boolean(
-                                currentItem.aadhaarCardUrl || 
-                                currentItem.electricityBillUrl || 
+                            {Boolean(
+                                currentItem.aadhaarCardUrl ||
+                                currentItem.electricityBillUrl ||
                                 currentItem.nocUrl ||
                                 (currentItem as any).document_aadhaar ||
                                 (currentItem as any).document_electricity ||
                                 (currentItem as any).document_noc
-                             ) && (
-                                <div className="border rounded-lg p-4 bg-blue-50">
-                                    <h4 className="font-semibold text-base mb-3 flex items-center gap-2">
-                                        <FileCheck className="w-5 h-5 text-blue-700" />
-                                        Verification Documents
-                                    </h4>
-                                    <div className="flex flex-wrap gap-4">
-                                        {(currentItem.aadhaarCardUrl || (currentItem as any).document_aadhaar) && (
-                                            <div className="flex flex-col items-center gap-2">
-                                                <FileText className="w-8 h-8 text-blue-600"/>
-                                                <p className="text-sm font-medium">Aadhaar Card</p>
-                                                <Button asChild variant="outline" size="sm">
-                                                    <a href={currentItem.aadhaarCardUrl || (currentItem as any).document_aadhaar} target="_blank" rel="noopener noreferrer">View</a>
-                                                </Button>
-                                            </div>
-                                        )}
-                                        {(currentItem.electricityBillUrl || (currentItem as any).document_electricity) && (
-                                            <div className="flex flex-col items-center gap-2">
-                                                <FileText className="w-8 h-8 text-blue-600"/>
-                                                <p className="text-sm font-medium">Electricity Bill</p>
-                                                <Button asChild variant="outline" size="sm">
-                                                    <a href={currentItem.electricityBillUrl || (currentItem as any).document_electricity} target="_blank" rel="noopener noreferrer">View</a>
-                                                </Button>
-                                            </div>
-                                        )}
-                                        {(currentItem.nocUrl || (currentItem as any).document_noc) && (
-                                            <div className="flex flex-col items-center gap-2">
-                                                <FileText className="w-8 h-8 text-blue-600"/>
-                                                <p className="text-sm font-medium">NOC</p>
-                                                <Button asChild variant="outline" size="sm">
-                                                    <a href={currentItem.nocUrl || (currentItem as any).document_noc} target="_blank" rel="noopener noreferrer">View</a>
-                                                </Button>
-                                            </div>
-                                        )}
+                            ) && (
+                                    <div className="border rounded-lg p-4 bg-blue-50">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="font-semibold text-base flex items-center gap-2">
+                                                <FileCheck className="w-5 h-5 text-blue-700" />
+                                                Verification Documents
+                                            </h4>
+                                            {currentItem.propertyType === 'Roommate' && ('age' in currentItem && currentItem.age) && (
+                                                <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-semibold border border-blue-200">
+                                                    Age: {currentItem.age}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-wrap gap-4">
+                                            {(currentItem.aadhaarCardUrl || (currentItem as any).document_aadhaar) && (
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <FileText className="w-8 h-8 text-blue-600" />
+                                                    <p className="text-sm font-medium">Aadhaar Card</p>
+                                                    <Button asChild variant="outline" size="sm">
+                                                        <a href={currentItem.aadhaarCardUrl || (currentItem as any).document_aadhaar} target="_blank" rel="noopener noreferrer">View</a>
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            {(currentItem.electricityBillUrl || (currentItem as any).document_electricity) && (
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <FileText className="w-8 h-8 text-blue-600" />
+                                                    <p className="text-sm font-medium">Electricity Bill</p>
+                                                    <Button asChild variant="outline" size="sm">
+                                                        <a href={currentItem.electricityBillUrl || (currentItem as any).document_electricity} target="_blank" rel="noopener noreferrer">View</a>
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            {(currentItem.nocUrl || (currentItem as any).document_noc) && (
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <FileText className="w-8 h-8 text-blue-600" />
+                                                    <p className="text-sm font-medium">NOC</p>
+                                                    <Button asChild variant="outline" size="sm">
+                                                        <a href={currentItem.nocUrl || (currentItem as any).document_noc} target="_blank" rel="noopener noreferrer">View</a>
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                 <div className="p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground">ID</strong>
@@ -1885,6 +1923,12 @@ function AdminDashboard() {
                                     <strong className="block text-sm font-medium text-muted-foreground">Type</strong>
                                     <div className="capitalize">{currentItem.propertyType}</div>
                                 </div>
+                                {currentItem.propertyType === 'Roommate' && (
+                                    <div className="p-3 bg-slate-50 rounded-md space-y-1">
+                                        <strong className="block text-sm font-medium text-muted-foreground">Age</strong>
+                                        <div className="font-semibold">{('age' in currentItem && currentItem.age) ? currentItem.age : 'N/A'}</div>
+                                    </div>
+                                )}
                                 <div className="p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground">Locality</strong>
                                     <div>{currentItem.locality}</div>
@@ -1898,14 +1942,14 @@ function AdminDashboard() {
                                     <strong className="block text-sm font-medium text-muted-foreground flex items-center gap-1.5"><UserIcon className="w-4 h-4" /> Owner/User Name</strong>
                                     <div>{currentItem.ownerName}</div>
                                 </div>
-                                
+
                                 <div className="p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground flex items-center gap-1.5"><Phone className="w-4 h-4" /> Phone Number</strong>
                                     <div className="font-medium text-primary">
                                         {currentItem.contactPhonePrimary !== 'Hidden' && currentItem.contactPhonePrimary ? currentItem.contactPhonePrimary : 'Not Provided'}
                                     </div>
                                 </div>
-                                
+
                                 <div className="md:col-span-2 p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Full Address</strong>
                                     <div>{currentItem.completeAddress || currentItem.partialAddress || 'Not Provided'}</div>
@@ -1917,48 +1961,48 @@ function AdminDashboard() {
                                     <div>{('description' in currentItem && currentItem.description) ? currentItem.description : 'No description provided.'}</div>
                                 </div>
 
-    {/* NEW BULLETPROOF AMENITIES BLOCK */}
-    {('amenities' in currentItem) && (
-        <div className="md:col-span-2 p-3 bg-slate-50 rounded-md space-y-1">
-            <strong className="block text-sm font-medium text-muted-foreground">Amenities</strong>
-            {Array.isArray(currentItem.amenities) && currentItem.amenities.length > 0 ? (
-                <div className="flex flex-wrap gap-2 mt-1">
-                    {currentItem.amenities.map((amenity: string, index: number) => (
-                        <span key={index} className="bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-medium border border-slate-300">
-                            {amenity}
-                        </span>
-                    ))}
-                </div>
-            ) : typeof (currentItem.amenities as unknown) === 'string' && (currentItem.amenities as unknown as string).length > 0 ? (
-                <div className="flex flex-wrap gap-2 mt-1">
-                    {(currentItem.amenities as unknown as string).split(',').map((amenity: string, index: number) => (
-                        <span key={index} className="bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-medium border border-slate-300">
-                            {amenity.trim()}
-                        </span>
-                    ))}
-                </div>
-            ) : (
-                <p className="text-sm text-slate-500 italic">No specific amenities listed.</p>
-            )}
-        </div>
-    )}
+                                {/* NEW BULLETPROOF AMENITIES BLOCK */}
+                                {('amenities' in currentItem) && (
+                                    <div className="md:col-span-2 p-3 bg-slate-50 rounded-md space-y-1">
+                                        <strong className="block text-sm font-medium text-muted-foreground">Amenities</strong>
+                                        {Array.isArray(currentItem.amenities) && currentItem.amenities.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                {currentItem.amenities.map((amenity: string, index: number) => (
+                                                    <span key={index} className="bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-medium border border-slate-300">
+                                                        {amenity}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : typeof (currentItem.amenities as unknown) === 'string' && (currentItem.amenities as unknown as string).length > 0 ? (
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                {(currentItem.amenities as unknown as string).split(',').map((amenity: string, index: number) => (
+                                                    <span key={index} className="bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-medium border border-slate-300">
+                                                        {amenity.trim()}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-slate-500 italic">No specific amenities listed.</p>
+                                        )}
+                                    </div>
+                                )}
 
-    {/* NEW WHATSAPP & CALL BUTTONS FOR ADMIN */}
-    {currentItem.contactPhonePrimary && !currentItem.contactPhonePrimary.includes('Hidden') && (
-        <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 pt-2">
-            <Button className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white shadow-sm" asChild>
-                <a href={`https://wa.me/${currentItem.contactPhonePrimary.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">
-                    Chat on WhatsApp
-                </a>
-            </Button>
-            <Button variant="outline" className="flex-1 shadow-sm border-blue-200 text-blue-700 hover:bg-blue-50" asChild>
-                <a href={`tel:${currentItem.contactPhonePrimary.replace(/\D/g, '')}`}>
-                    Call Owner
-                </a>
-            </Button>
-        </div>
-    )}
-</div>
+                                {/* NEW WHATSAPP & CALL BUTTONS FOR ADMIN */}
+                                {currentItem.contactPhonePrimary && !currentItem.contactPhonePrimary.includes('Hidden') && (
+                                    <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 pt-2">
+                                        <Button className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white shadow-sm" asChild>
+                                            <a href={`https://wa.me/${currentItem.contactPhonePrimary.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">
+                                                Chat on WhatsApp
+                                            </a>
+                                        </Button>
+                                        <Button variant="outline" className="flex-1 shadow-sm border-blue-200 text-blue-700 hover:bg-blue-50" asChild>
+                                            <a href={`tel:${currentItem.contactPhonePrimary.replace(/\D/g, '')}`}>
+                                                Call Owner
+                                            </a>
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="flex justify-end space-x-2 pt-4">
                                 <Button variant="outline" onClick={() => setDetailsModalOpen(false)}>Close</Button>
@@ -1982,7 +2026,7 @@ function AdminDashboard() {
                 </DialogContent>
             </Dialog>
 
-{/* Settings Modals */}
+            {/* Settings Modals */}
             <Dialog open={activeSettingsDialog === 'password'} onOpenChange={() => setActiveSettingsDialog(null)}>
                 <DialogContent>
                     <DialogHeader><DialogTitle>Change Password</DialogTitle></DialogHeader>
@@ -1998,27 +2042,27 @@ function AdminDashboard() {
             <Dialog open={activeSettingsDialog === 'security'} onOpenChange={() => setActiveSettingsDialog(null)}>
                 <DialogContent>
                     <DialogHeader><DialogTitle>Change Security Question</DialogTitle></DialogHeader>
-                    <SecurityQuestionChangeForm 
-                        currentQuestion={adminQuestion} 
-                        currentAnswer={adminAnswer} 
-                        onSave={handleUpdateSecurityQuestion} 
+                    <SecurityQuestionChangeForm
+                        currentQuestion={adminQuestion}
+                        currentAnswer={adminAnswer}
+                        onSave={handleUpdateSecurityQuestion}
                         onClose={() => setActiveSettingsDialog(null)} />
                 </DialogContent>
             </Dialog>
             <Dialog open={activeSettingsDialog === 'contact'} onOpenChange={() => setActiveSettingsDialog(null)}>
                 <DialogContent>
                     <DialogHeader><DialogTitle>Change Contact Information</DialogTitle></DialogHeader>
-                    <ContactInfoChangeForm 
+                    <ContactInfoChangeForm
                         currentEmail={adminEmail}
                         currentPhone={adminPhone}
                         currentAddress={adminAddress}
                         onSave={handleSaveContactInfo}
-                        onClose={() => setActiveSettingsDialog(null)} 
+                        onClose={() => setActiveSettingsDialog(null)}
                     />
                 </DialogContent>
             </Dialog>
 
-        {/* Security Setting Modals (Header Menu) */}
+            {/* Security Setting Modals (Header Menu) */}
             <Dialog open={isPasswordModalOpen} onOpenChange={setPasswordModalOpen}>
                 <DialogContent>
                     <DialogHeader><DialogTitle>Change Admin Password</DialogTitle></DialogHeader>

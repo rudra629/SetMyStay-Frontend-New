@@ -11,13 +11,13 @@ export function ContactFab() {
     const [isOpen, setIsOpen] = useState(false);
 
     const emailAddress = "setmystay02@gmail.com";
-    const whatsappNumber = "918210552902";
+    const whatsappNumber = "+91 79771 69550";
     const whatsappMessage = "Hello, I have a question about SetMyStay.";
 
     return (
         <div className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-50">
             <div className="relative flex flex-col items-center gap-2">
-                 <a
+                <a
                     href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -34,7 +34,7 @@ export function ContactFab() {
                         <MessageCircle className="w-5 h-5" />
                     </Button>
                 </a>
-                 <a
+                <a
                     href={`mailto:${emailAddress}`}
                     className={cn(
                         "transition-all duration-300 ease-in-out",
@@ -49,7 +49,7 @@ export function ContactFab() {
                         <Mail className="w-5 h-5" />
                     </Button>
                 </a>
-                
+
                 <Button
                     onClick={() => setIsOpen(!isOpen)}
                     size="icon"

@@ -94,9 +94,32 @@ const MediaGallery = ({ listing, isUnlocked, onUnlock }: { listing: Listing; isU
             className={`absolute inset-0 transition-opacity duration-300 ${index === currentIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           >
             {isVideo ? (
-              <video src={src as string} controls playsInline className="w-full h-full object-contain bg-black" />
+              <video 
+                key={src as string}
+                src={src as string} 
+                controls 
+                playsInline 
+                autoPlay={index === currentIndex}
+                ref={(el) => {
+                  if (el) {
+                    if (index === currentIndex) {
+                      el.play().catch(() => {});
+                    } else {
+                      el.pause();
+                    }
+                  }
+                }}
+                className="w-full h-full object-contain bg-black" 
+              />
             ) : (
-              <img src={src as string} alt={`${listing.title} media ${index + 1}`} className="absolute inset-0 h-full w-full object-cover" />
+              <img 
+                src={src as string} 
+                alt={`${listing.title} media ${index + 1}`} 
+                className="absolute inset-0 h-full w-full object-cover" 
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80";
+                }}
+              />
             )}
           </div>
         );

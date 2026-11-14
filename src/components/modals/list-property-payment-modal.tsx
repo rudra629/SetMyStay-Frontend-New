@@ -58,13 +58,14 @@ export function ListPropertyPaymentModal({
         });
 
         // Robust key resolution: checks backend keys (razorpay_key, key, key_id)
-        // and falls back to frontend environment variables
+        // and falls back to frontend environment variables and test key
         const razorpayKey =
-          data.razorpay_key ||
-          data.key ||
-          data.key_id ||
+          data?.razorpay_key ||
+          data?.key ||
+          data?.key_id ||
           import.meta.env.VITE_RAZORPAY_KEY_ID ||
-          (import.meta.env as any).NEXT_PUBLIC_RAZORPAY_KEY_ID;
+          (import.meta.env as any).NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+          'rzp_test_Tf3u02X48fg0SH';
 
         if (!razorpayKey) {
           throw new Error("Razorpay Key ID is missing. Please check your configuration.");
