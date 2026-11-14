@@ -36,19 +36,19 @@ const steps = [
 ];
 
 
-export function HomeSection({ 
-  featuredProperties, 
+export function HomeSection({
+  featuredProperties,
   featuredPGs = [],
-  featuredRoommates, 
+  featuredRoommates,
   allRoommates = [],
-  onViewDetails, 
-  onNavigate, 
-  likedItemIds, 
-  onToggleLike, 
-  unlockedIds 
+  onViewDetails,
+  onNavigate,
+  likedItemIds,
+  onToggleLike,
+  unlockedIds
 }: HomeSectionProps) {
-  const swipeDeckItems = allRoommates.length > 0 
-    ? allRoommates 
+  const swipeDeckItems = allRoommates.length > 0
+    ? allRoommates
     : (featuredRoommates.length > 0 ? featuredRoommates : dummyRoommates);
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
@@ -60,7 +60,7 @@ export function HomeSection({
   useEffect(() => {
     const v = videoRef.current; if (!v) return;
     v.muted = true; v.setAttribute("muted", ""); v.setAttribute("webkit-playsinline", "");
-    const play = () => v.play().catch(() => {});
+    const play = () => v.play().catch(() => { });
     play();
     document.addEventListener("touchstart", play, { once: true, passive: true });
     return () => document.removeEventListener("touchstart", play);
@@ -68,16 +68,16 @@ export function HomeSection({
 
   return (
     <div>
-        <section ref={heroRef} className="relative h-[90svh] min-h-[620px] overflow-hidden bg-ink">
-        <motion.video 
-          style={lite ? undefined : { scale: videoScale }} 
-          autoPlay 
-          loop 
-          muted 
-          playsInline 
+      <section ref={heroRef} className="relative h-[90svh] min-h-[620px] overflow-hidden bg-ink">
+        <motion.video
+          style={lite ? undefined : { scale: videoScale }}
+          autoPlay
+          loop
+          muted
+          playsInline
           preload="auto"
-          className="absolute inset-0 h-full w-full object-cover" 
-          src={heroVideoUrl} 
+          className="absolute inset-0 h-full w-full object-cover"
+          src={heroVideoUrl}
         />
         <div className="absolute inset-0 bg-ink-fade" />
         <motion.div style={lite ? undefined : { y: contentY, opacity: contentOpacity }}
@@ -157,12 +157,12 @@ export function HomeSection({
         )} onAll={() => onNavigate("pg")} />
       )}
 
-      {/* ROOMMATES */}
+      {/* ROOMMATES
       {featuredRoommates.length > 0 && (
         <FeaturedRail title="Roommates near you" items={featuredRoommates} render={(r) => (
           <RoommateCard profile={r} onViewDetails={(i) => onViewDetails(i, "roommate")} isLiked={likedItemIds.has(r.id)} onToggleLike={() => onToggleLike(r.id)} isUnlocked={unlockedIds.has(r.id)} />
         )} onAll={() => onNavigate("roommates")} />
-      )}
+      )} */}
 
       {/* STEPS */}
       <section className="container py-16 sm:py-24">
