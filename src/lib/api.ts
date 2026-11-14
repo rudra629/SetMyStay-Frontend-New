@@ -327,8 +327,16 @@ api.interceptors.response.use(
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
           localStorage.removeItem('setmystay_isLoggedIn');
-          localStorage.removeItem('admin_authenticated');
-          window.location.href = '/admin/login'; 
+          const onAdminPage = window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/staff');
+          if (onAdminPage) {
+            localStorage.removeItem('admin_authenticated');
+            window.location.href = window.location.pathname.startsWith('/staff') ? '/staff/login' : '/admin/login';
+          } else {
+            // Normal users: log out cleanly and stay on the main site
+            ['user_email', 'user_name', 'user_phone', 'user_address', 'user_pic',
+             'setmystay_user_data', 'setmystay_purchase_history'].forEach((k) => localStorage.removeItem(k));
+            window.location.href = '/';
+          }
         }
       }
     }
@@ -397,9 +405,7 @@ export interface PurchaseRecord {
 }
 
 export const getMyPurchases = async (): Promise<PurchaseRecord[]> => {
-  const email = typeof window !== 'undefined' ? (localStorage.getItem('user_email') || '') : '';
-  const url = email ? `/payments/my-history/?email=${encodeURIComponent(email)}` : '/payments/my-history/';
-  const response = await api.get(url);
+  const response = await api.get('/payments/my-history/');
   return response.data.results ? response.data.results : response.data;
 };
 
@@ -408,11 +414,9 @@ export const getAllPurchasesAdmin = async (): Promise<PurchaseRecord[]> => {
   return response.data.results ? response.data.results : response.data;
 };
 
-export const getUserUnlocks = async (email?: string): Promise<string[]> => {
+export const getUserUnlocks = async (): Promise<string[]> => {
   try {
-    const userEmail = email || (typeof window !== 'undefined' ? (localStorage.getItem('user_email') || '') : '');
-    const url = userEmail ? `/payments/my-unlocks/?email=${encodeURIComponent(userEmail)}` : '/payments/my-unlocks/';
-    const response = await api.get(url);
+    const response = await api.get('/payments/my-unlocks/');
     return response.data?.unlocked_ids || [];
   } catch (e) {
     console.warn("Could not fetch remote unlocks:", e);
@@ -420,19 +424,37 @@ export const getUserUnlocks = async (email?: string): Promise<string[]> => {
   }
 };
 
-export const unlockListingApi = async (propertyId: string, email?: string, userName?: string): Promise<string[]> => {
+export interface MyPlan {
+  credits_bought: number;
+  credits_used: number;
+  credits_left: number;
+  is_unlimited: boolean;
+  unlimited_expires_at: string | null;
+  unlocked_ids: string[];
+}
+
+/** Credits left, Ultimate status and unlocked listings, straight from the database. */
+export const getMyPlan = async (): Promise<MyPlan> => {
+  const response = await api.get('/payments/my-plan/');
+  return response.data;
+};
+
+/**
+ * Unlocks a listing on the server. Throws an error with `noCredits = true`
+ * when the account has no credits left (HTTP 402).
+ */
+export const unlockListingApi = async (propertyId: string): Promise<MyPlan | null> => {
   try {
-    const userEmail = email || (typeof window !== 'undefined' ? (localStorage.getItem('user_email') || '') : '');
-    const name = userName || (typeof window !== 'undefined' ? (localStorage.getItem('user_name') || '') : '');
-    const response = await api.post('/payments/unlock-listing/', {
-      property_id: propertyId,
-      user_email: userEmail,
-      user_name: name,
-    });
-    return response.data?.unlocked_ids || [];
-  } catch (e) {
-    console.warn("Could not record remote unlock:", e);
-    return [];
+    const response = await api.post('/payments/unlock-listing/', { property_id: propertyId });
+    return response.data?.plan || null;
+  } catch (e: any) {
+    if (e?.response?.status === 402) {
+      const err: any = new Error('No unlock credits left');
+      err.noCredits = true;
+      err.plan = e.response.data?.plan || null;
+      throw err;
+    }
+    throw e;
   }
 };
 

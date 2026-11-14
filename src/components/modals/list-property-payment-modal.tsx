@@ -106,6 +106,7 @@ export function ListPropertyPaymentModal({
                 property_id: propertyId || null,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
                 plan_name: 'Property Listing Fee',
                 amount: validAmount,
                 user_email: uEmail,

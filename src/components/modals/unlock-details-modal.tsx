@@ -121,13 +121,22 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
                 property_id: null,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
                 plan_name: currentPlan.title,
                 amount: finalAmount,
                 user_email: uEmail,
                 user_name: uName,
               });
             } catch (e) {
-              console.warn("History sync warning:", e);
+              console.warn("Payment verification failed:", e);
+              toast({
+                title: "Payment not confirmed",
+                description: "We could not confirm this payment. If money was deducted, contact support with ID " + (response.razorpay_payment_id || '') + ".",
+                variant: "destructive",
+              });
+              if (typeof document !== 'undefined') document.body.style.pointerEvents = 'auto';
+              setSelectedPlan(null);
+              return;
             }
 
             toast({

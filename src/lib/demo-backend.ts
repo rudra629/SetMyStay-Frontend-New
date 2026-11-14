@@ -232,6 +232,11 @@ function handle(method: string, url: string, body: Record<string, any>): [number
   }
   if (p === "/payments/my-history/") return [200, d.purchases.filter((x) => x.user_name === "Demo User" || x.user_name === localStorage.getItem("user_name"))];
   if (p === "/payments/all-history/") return [200, d.purchases];
+  if (p === "/payments/my-plan/") {
+    const raw = localStorage.getItem("setmystay_demo_unlocks");
+    const ids: string[] = raw ? JSON.parse(raw) : [];
+    return [200, { credits_bought: 999, credits_used: ids.length, credits_left: 999 - ids.length, is_unlimited: false, unlimited_expires_at: null, unlocked_ids: ids }];
+  }
   if (p.startsWith("/payments/my-unlocks")) {
     const raw = localStorage.getItem("setmystay_demo_unlocks");
     return [200, { unlocked_ids: raw ? JSON.parse(raw) : [] }];
