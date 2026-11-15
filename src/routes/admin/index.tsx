@@ -2032,12 +2032,12 @@ function AdminDashboard() {
                                 {/* NEW WHATSAPP & CALL BUTTONS FOR ADMIN */}
                                 {currentItem.contactPhonePrimary && !currentItem.contactPhonePrimary.includes('Hidden') && (
                                     <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 pt-2">
-                                        <Button className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white shadow-sm" asChild>
+                                        <Button className="h-11 w-full sm:w-auto sm:flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white shadow-sm" asChild>
                                             <a href={whatsappLink(currentItem.contactPhonePrimary)} target="_blank" rel="noopener noreferrer">
                                                 Chat on WhatsApp
                                             </a>
                                         </Button>
-                                        <Button variant="outline" className="flex-1 shadow-sm border-blue-200 text-blue-700 hover:bg-blue-50" asChild>
+                                        <Button variant="outline" className="h-11 w-full sm:w-auto sm:flex-1 shadow-sm border-blue-200 text-blue-700 hover:bg-blue-50" asChild>
                                             <a href={`tel:${currentItem.contactPhonePrimary.replace(/\D/g, '')}`}>
                                                 Call Owner
                                             </a>

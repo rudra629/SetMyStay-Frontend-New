@@ -317,12 +317,12 @@ export function PropertyDetails({ listing, onClose, isUnlocked, onUnlock, onChat
             <div className="flex flex-col sm:flex-row gap-4">
                 {isUnlocked && listing.contactPhonePrimary && !listing.contactPhonePrimary.includes('Hidden') ? (
                     <>
-                        <Button size="lg" className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white shadow-sm" asChild>
+                        <Button size="lg" className="h-12 w-full sm:w-auto sm:flex-1 rounded-xl text-base font-semibold bg-[#25D366] hover:bg-[#128C7E] text-white shadow-sm" asChild>
                             <a href={whatsappLink(listing.contactPhonePrimary)} target="_blank" rel="noopener noreferrer">
                                 <MessageSquare className="w-5 h-5 mr-2" /> Chat on WhatsApp
                             </a>
                         </Button>
-                        <Button size="lg" variant="outline" className="flex-1 shadow-sm" asChild>
+                        <Button size="lg" variant="outline" className="h-12 w-full sm:w-auto sm:flex-1 rounded-xl text-base font-semibold shadow-sm" asChild>
                             <a href={`tel:${listing.contactPhonePrimary.replace(/\D/g, '')}`}>
                                 <Phone className="w-5 h-5 mr-2" /> Call Owner
                             </a>
@@ -330,16 +330,16 @@ export function PropertyDetails({ listing, onClose, isUnlocked, onUnlock, onChat
                     </>
                 ) : (
                     <>
-                        <Button size="lg" className="flex-1 bg-slate-100 text-slate-400" disabled>
+                        <Button size="lg" className="h-12 w-full sm:w-auto sm:flex-1 rounded-xl text-base font-semibold bg-slate-100 text-slate-400" disabled>
                             <MessageSquare className="w-5 h-5 mr-2" /> WhatsApp Unavailable
                         </Button>
-                        <Button size="lg" variant="outline" className="flex-1 text-slate-400" disabled>
+                        <Button size="lg" variant="outline" className="h-12 w-full sm:w-auto sm:flex-1 rounded-xl text-base font-semibold text-slate-400" disabled>
                             <Phone className="w-5 h-5 mr-2" /> Call Unavailable
                         </Button>
                     </>
                 )}
             </div>
-            <Button size="lg" variant="ghost" className="w-full text-muted-foreground hover:text-foreground" onClick={onClose}>
+            <Button size="lg" variant="ghost" className="h-12 w-full rounded-xl text-base font-medium text-muted-foreground hover:text-foreground" onClick={onClose}>
                 Close Details
             </Button>
         </div>

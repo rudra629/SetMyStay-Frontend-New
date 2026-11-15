@@ -242,28 +242,28 @@ export function RoommateDetails({ profile, onClose, isUnlocked, onUnlock, onChat
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Opens WhatsApp with the person's number (same as the property pop-up) */}
           {isUnlocked && profile.contactPhonePrimary ? (
-            <Button asChild size="lg" className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white">
+            <Button asChild size="lg" className="h-12 w-full sm:w-auto sm:flex-1 rounded-xl text-base font-semibold bg-[#25D366] hover:bg-[#128C7E] text-white">
               <a href={whatsappLink(profile.contactPhonePrimary, `Hi ${profile.ownerName || ''}, I saw your roommate profile on SetMyStay.`.replace('Hi ,', 'Hi,'))} target="_blank" rel="noopener noreferrer">
                 <MessageSquare className="w-5 h-5 mr-2" /> Chat on WhatsApp
               </a>
             </Button>
           ) : (
-            <Button size="lg" className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white" disabled>
+            <Button size="lg" className="h-12 w-full sm:w-auto sm:flex-1 rounded-xl text-base font-semibold bg-[#25D366] hover:bg-[#128C7E] text-white" disabled>
               <MessageSquare className="w-5 h-5 mr-2" /> Chat on WhatsApp
             </Button>
           )}
           {isUnlocked && profile.contactPhonePrimary ? (
-            <Button asChild size="lg" variant="outline" className="flex-1">
+            <Button asChild size="lg" variant="outline" className="h-12 w-full sm:w-auto sm:flex-1 rounded-xl text-base font-semibold">
               <a href={`tel:${String(profile.contactPhonePrimary).replace(/[^\d+]/g, '')}`}>
                 <Phone className="w-5 h-5 mr-2" /> Call
               </a>
             </Button>
           ) : (
-            <Button size="lg" variant="outline" className="flex-1" disabled>
+            <Button size="lg" variant="outline" className="h-12 w-full sm:w-auto sm:flex-1 rounded-xl text-base font-semibold" disabled>
               <Phone className="w-5 h-5 mr-2" /> Call
             </Button>
           )}
-          <Button size="lg" variant="ghost" className="flex-1" onClick={onClose}>
+          <Button size="lg" variant="ghost" className="h-12 w-full sm:w-auto sm:flex-1 rounded-xl text-base font-semibold" onClick={onClose}>
                 Close
            </Button>
         </div>
