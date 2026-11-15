@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import type { Listing, Bed } from '@/lib/types';
 import { DetailsModalWrapper } from './details-modal-wrapper';
 import { Button } from '@/components/ui/button';
@@ -53,6 +53,25 @@ const MediaGallery = ({ listing, isUnlocked, onUnlock }: { listing: Listing; isU
     setCurrentIndex((prev) => (prev - 1 + mediaToShow.length) % mediaToShow.length);
   };
 
+    // Swipe left/right on phones to change photo
+    const touchStart = useRef<{ x: number; y: number } | null>(null);
+    const onTouchStart = (e: React.TouchEvent) => {
+      if ((e.target as HTMLElement).closest("video, button")) { touchStart.current = null; return; }
+      const t = e.touches[0];
+      touchStart.current = { x: t.clientX, y: t.clientY };
+    };
+    const onTouchEnd = (e: React.TouchEvent) => {
+      const start = touchStart.current;
+      touchStart.current = null;
+      if (!start || mediaToShow.length < 2) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - start.x;
+      const dy = t.clientY - start.y;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        if (dx < 0) nextMedia(); else prevMedia();
+      }
+    };
+
   if (mediaToShow.length === 0) {
     return (
       <div className="w-full h-80 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed">
@@ -64,13 +83,13 @@ const MediaGallery = ({ listing, isUnlocked, onUnlock }: { listing: Listing; isU
   const placeholderImage = allImages.find((img) => !isVideoUrl(img)) || allImages[0];
 
   return (
-    <div className="relative w-full h-80 bg-muted rounded-lg overflow-hidden border">
+    <div className="relative w-full h-80 bg-muted rounded-lg overflow-hidden border touch-pan-y select-none" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {mediaToShow.map((src, index) => {
         if (src === 'unlock_placeholder') {
           return (
             <div
               key="unlock-placeholder"
-              className={`absolute inset-0 bg-slate-300 transition-opacity duration-300 ${index === currentIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+              className={`absolute inset-0 bg-slate-300 transition-opacity duration-300 isolate ${index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}`}
             >
               {placeholderImage && (
                 <img src={placeholderImage} alt="Blurred background" className="absolute inset-0 h-full w-full object-cover filter blur-md scale-110" />
@@ -91,7 +110,7 @@ const MediaGallery = ({ listing, isUnlocked, onUnlock }: { listing: Listing; isU
         return (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-300 ${index === currentIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            className={`absolute inset-0 transition-opacity duration-300 isolate ${index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}`}
           >
             {isVideo ? (
               <video 
@@ -135,12 +154,13 @@ const MediaGallery = ({ listing, isUnlocked, onUnlock }: { listing: Listing; isU
       
       {mediaToShow.length > 1 && (
         <>
-          <Button size="icon" variant="ghost" className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50" onClick={prevMedia}>
+          <Button size="icon" variant="ghost" aria-label="Previous photo" className="absolute left-2 top-1/2 -translate-y-1/2 z-30 rounded-full text-white bg-black/40 hover:bg-black/60 hover:text-white" onClick={prevMedia}>
             <ChevronLeft />
           </Button>
-          <Button size="icon" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50" onClick={nextMedia}>
+          <Button size="icon" variant="ghost" aria-label="Next photo" className="absolute right-2 top-1/2 -translate-y-1/2 z-30 rounded-full text-white bg-black/40 hover:bg-black/60 hover:text-white" onClick={nextMedia}>
             <ChevronRight />
           </Button>
+            <div className="absolute top-2 right-2 z-30 rounded-full bg-black/50 px-2.5 py-0.5 text-xs font-medium text-white pointer-events-none">{currentIndex + 1} / {mediaToShow.length}</div>
         </>
       )}
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import type { RoommateProfile } from '@/lib/types';
 import { DetailsModalWrapper } from './details-modal-wrapper';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,25 @@ const MediaGallery = ({ profile }: { profile: RoommateProfile }) => {
   
     const nextMedia = () => setCurrentIndex((prev) => (prev + 1) % media.length);
     const prevMedia = () => setCurrentIndex((prev) => (prev - 1 + media.length) % media.length);
+
+    // Swipe left/right on phones to change photo
+    const touchStart = useRef<{ x: number; y: number } | null>(null);
+    const onTouchStart = (e: React.TouchEvent) => {
+      if ((e.target as HTMLElement).closest("video, button")) { touchStart.current = null; return; }
+      const t = e.touches[0];
+      touchStart.current = { x: t.clientX, y: t.clientY };
+    };
+    const onTouchEnd = (e: React.TouchEvent) => {
+      const start = touchStart.current;
+      touchStart.current = null;
+      if (!start || media.length < 2) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - start.x;
+      const dy = t.clientY - start.y;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        if (dx < 0) nextMedia(); else prevMedia();
+      }
+    };
   
     if (media.length === 0) {
       return (
@@ -41,11 +60,11 @@ const MediaGallery = ({ profile }: { profile: RoommateProfile }) => {
     }
   
     return (
-      <div className="relative w-full h-80 bg-muted rounded-lg overflow-hidden">
+      <div className="relative w-full h-80 bg-muted rounded-lg overflow-hidden touch-pan-y select-none" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {media.map((src, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-300 ${index === currentIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            className={`absolute inset-0 transition-opacity duration-300 isolate ${index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}`}
           >
             {/* Cloud Video Support */}
             {isVideoUrl(src) ? (
@@ -89,12 +108,13 @@ const MediaGallery = ({ profile }: { profile: RoommateProfile }) => {
         ))}
         {media.length > 1 && (
           <>
-            <Button size="icon" variant="ghost" className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50" onClick={prevMedia}>
+            <Button size="icon" variant="ghost" aria-label="Previous photo" className="absolute left-2 top-1/2 -translate-y-1/2 z-30 rounded-full text-white bg-black/40 hover:bg-black/60 hover:text-white" onClick={prevMedia}>
               <ChevronLeft />
             </Button>
-            <Button size="icon" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50" onClick={nextMedia}>
+            <Button size="icon" variant="ghost" aria-label="Next photo" className="absolute right-2 top-1/2 -translate-y-1/2 z-30 rounded-full text-white bg-black/40 hover:bg-black/60 hover:text-white" onClick={nextMedia}>
               <ChevronRight />
             </Button>
+            <div className="absolute top-2 right-2 z-30 rounded-full bg-black/50 px-2.5 py-0.5 text-xs font-medium text-white pointer-events-none">{currentIndex + 1} / {media.length}</div>
           </>
         )}
       </div>
