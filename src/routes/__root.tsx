@@ -83,14 +83,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SetMyStay" },
-      { name: "description", content: "Find Your Perfect Living Space" },
+      { title: "SetMyStay — Find Your Perfect Living Space" },
+      { name: "description", content: "Browse PGs, rentals and roommate listings. Unlock owner contact details, list your property, and find your perfect living space with SetMyStay." },
       { name: "author", content: "SetMyStay" },
-      { property: "og:title", content: "SetMyStay" },
-      { property: "og:description", content: "Find Your Perfect Living Space" },
+      { name: "theme-color", content: "#0b1220" },
+      { property: "og:site_name", content: "SetMyStay" },
+      { property: "og:title", content: "SetMyStay — Find Your Perfect Living Space" },
+      { property: "og:description", content: "Browse PGs, rentals and roommate listings and find your perfect living space." },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "en_IN" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {

@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+// Public address of the site, used for link previews. Set VITE_SITE_URL on Vercel when a custom domain is added.
+const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") || "https://set-my-stay-frontend-new.vercel.app";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -8,13 +11,23 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "SetMyStay — Find Your Perfect Living Space" },
       { property: "og:description", content: "Browse PGs, rentals and roommate listings. Unlock owner contact details, list your property, and find your perfect living space with SetMyStay." },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: SITE_URL + "/" },
+      { property: "og:image", content: SITE_URL + "/og-image.jpg" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "SetMyStay: PGs, rentals and roommates in one place" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "SetMyStay — Find Your Perfect Living Space" },
+      { name: "twitter:description", content: "Browse PGs, rentals and roommate listings. Unlock owner contact details, list your property, and find your perfect living space with SetMyStay." },
+      { name: "twitter:image", content: SITE_URL + "/og-image.jpg" },
     ],
+    links: [{ rel: "canonical", href: SITE_URL + "/" }],
   }),
   component: Home,
 });
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { HomeStaticShell } from "@/components/sections/home-static-shell";
 import type { Listing, RoommateProfile, Page, ListingType, UnlockPlan, Bed, Advertisement, Coupon, Purchase, AnyListing, PricingData } from "@/lib/types";
 import { defaultPricing, dummyProperties, dummyRoommates } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
@@ -845,12 +858,8 @@ function Home() {
   };
 
   if (isLoading || !isClient) {
-    return (
-      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
-        <LoadingSpinner className="w-16 h-16 text-primary" />
-        <p className="mt-4 text-lg font-semibold text-foreground">Loading SetMyStay...</p>
-      </div>
-    );
+    // Real homepage text, sent by the server (readable by Google, link previews and AI tools)
+    return <HomeStaticShell />;
   }
   
   const getListingsForPage = () => {
