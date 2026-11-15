@@ -22,7 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
-import { feeFor } from '@/lib/app-settings';
+import { feeFor, fetchAndCachePricing } from '@/lib/app-settings';
 
 const amenitiesList = [
   'Electricity Backup', '24x7 Water Supply', 'Lift/Elevator', 'Gated Security', 'Reserved Parking', 'Visitor Parking', 'Intercom Facility', 'Power Backup', 'Fire Safety', 'CCTV Surveillance',
@@ -225,8 +225,9 @@ export function ListPropertySection({ onSubmit }: ListPropertySectionProps) {
     defaultValues: {
       propertyType: 'RENTAL',
       brokerStatus: 'Without Broker',
-      rent: 15000,
-      area: 1200,
+      // Left empty so owners type their real rent/area (pre-filled numbers were being submitted as-is)
+      rent: '' as unknown as number,
+      area: '' as unknown as number,
       amenities: [],
       phonePrimary: '',
       phoneSecondary: '',
@@ -242,6 +243,18 @@ export function ListPropertySection({ onSubmit }: ListPropertySectionProps) {
   });
   
   const propertyType = form.watch('propertyType');
+
+  // The listing fee comes from the admin's prices saved in the browser. It is read only
+  // after the page has loaded, so the server and browser versions of the page match
+  // (reading it while rendering caused React error #418 and a full page re-render).
+  const [pricingVersion, setPricingVersion] = useState(0);
+  const [listingFee, setListingFee] = useState<number | null>(null);
+  useEffect(() => {
+    fetchAndCachePricing().then(() => setPricingVersion((v) => v + 1)).catch(() => {});
+  }, []);
+  useEffect(() => {
+    setListingFee(feeFor(propertyType));
+  }, [propertyType, pricingVersion]);
   const roommateStatus = form.watch('roommateStatus');
   const stateValue = form.watch('state');
   const cityValue = form.watch('city');
@@ -407,10 +420,10 @@ export function ListPropertySection({ onSubmit }: ListPropertySectionProps) {
                   </FormItem>
                 )}/>
                 <FormField control={form.control} name="rent" render={({ field }) => (
-                  <FormItem><FormLabel>{propertyType === 'ROOMMATE' && roommateStatus === 'needsProperty' ? 'Target Budget (₹)' : 'Monthly Rent (₹)'}</FormLabel><FormControl><Input type="number" placeholder="15000" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>{propertyType === 'ROOMMATE' && roommateStatus === 'needsProperty' ? 'Target Budget (₹)' : 'Monthly Rent (₹)'}</FormLabel><FormControl><Input type="number" placeholder="e.g. 15000" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                 <FormField control={form.control} name="area" render={({ field }) => (
-                  <FormItem><FormLabel>Area (sq ft)</FormLabel><FormControl><Input type="number" placeholder="1200" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Area (sq ft)</FormLabel><FormControl><Input type="number" placeholder="e.g. 1200" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                 
                 {propertyType === 'ROOMMATE' && (
@@ -796,7 +809,7 @@ export function ListPropertySection({ onSubmit }: ListPropertySectionProps) {
             </Card>
 
             <Button type="submit" size="lg" className="w-full">
-                Proceed to Payment & List (₹{feeFor(propertyType)})
+                Proceed to Payment & List{listingFee !== null ? ` (₹${listingFee})` : ''}
             </Button>
           </form>
         </Form>

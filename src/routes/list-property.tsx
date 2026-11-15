@@ -29,9 +29,10 @@ function ListPropertyPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<any>(null);
-  const [listingAmount, setListingAmount] = useState<number>(() => feeFor("RENTAL"));
+  const [listingAmount, setListingAmount] = useState<number>(0);
 
   useEffect(() => {
+    setListingAmount(feeFor("RENTAL"));
     fetchAndCachePricing().catch(() => {});
   }, []);
 

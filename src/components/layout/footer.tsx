@@ -5,7 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone } from "lucide-react";
+import { Instagram, Linkedin, Mail, Phone } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { Page } from "@/lib/types";
 import api from "@/lib/api";
@@ -55,12 +55,6 @@ export function Footer({ onNavigate, onOpenPolicy }: FooterProps) {
               Your trusted partner for finding the perfect living space. Connecting people with their ideal homes.
             </p>
             <div className="flex space-x-2">
-              <Button variant="ghost" size="icon" asChild>
-                <a href="#" aria-label="Facebook" className="text-ink-foreground/50 hover:text-ink-foreground"><Facebook className="w-5 h-5" /></a>
-              </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <a href="#" aria-label="Twitter" className="text-ink-foreground/50 hover:text-ink-foreground"><Twitter className="w-5 h-5" /></a>
-              </Button>
               <Button variant="ghost" size="icon" asChild>
                 <a href="https://www.instagram.com/setmystay?igsh=MXJkOXFkYzVwc3JjNg==" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-ink-foreground/50 hover:text-ink-foreground"><Instagram className="w-5 h-5" /></a>
               </Button>
