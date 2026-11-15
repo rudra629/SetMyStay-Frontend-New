@@ -42,3 +42,20 @@ export function whatsappLink(phone: string | null | undefined, message?: string)
   const n = whatsappNumber(phone);
   return `https://wa.me/${n}${message ? `?text=${encodeURIComponent(message)}` : ""}`;
 }
+
+/**
+ * Ask Cloudinary for a photo at the size it is shown, in the best format the browser
+ * supports (WebP/AVIF), at automatic quality. `width` should be about twice the
+ * on-screen width so photos stay sharp on phones and retina screens.
+ * Non-Cloudinary URLs (and URLs that already have settings) are returned unchanged.
+ */
+export function cdnImage(url: string | null | undefined, width: number): string {
+  const u = String(url || "");
+  const marker = "/image/upload/";
+  const i = u.indexOf(marker);
+  if (!u.includes("res.cloudinary.com") || i === -1) return u;
+  const rest = u.slice(i + marker.length);
+  // Already has transformation settings (e.g. "w_800,..." or "f_auto/...")
+  if (/^[a-z]{1,3}_[^/]+\//.test(rest) && !/^v\d+\//.test(rest)) return u;
+  return `${u.slice(0, i + marker.length)}f_auto,q_auto,c_limit,w_${width}/${rest}`;
+}

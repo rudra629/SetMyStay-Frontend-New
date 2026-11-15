@@ -144,6 +144,22 @@ export async function recordSwipe(): Promise<SwipeState> {
   return guestToState(g.count);
 }
 
+/** Undo on the swipe deck: gives the last swipe back. */
+export async function undoSwipe(): Promise<SwipeState> {
+  if (isLoggedIn()) {
+    try {
+      const { data } = await api.post("/swipes/undo/");
+      return fromServer(data);
+    } catch {
+      return fetchSwipeState();
+    }
+  }
+  const g = guestState();
+  g.count = Math.max(0, g.count - 1);
+  try { localStorage.setItem(GUEST_SWIPES_KEY, JSON.stringify(g)); } catch { /* ignore */ }
+  return guestToState(g.count);
+}
+
 // Old per-browser counter is no longer used
 try { if (typeof localStorage !== "undefined") localStorage.removeItem(SWIPES_KEY); } catch { /* ignore */ }
 

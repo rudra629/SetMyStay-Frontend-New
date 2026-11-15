@@ -42,6 +42,9 @@ export function HomeStaticShell() {
 
       <main className="flex-grow">
         <section className="relative h-[90svh] min-h-[620px] overflow-hidden bg-ink">
+          {/* First frame of the hero video, so there is no dark flash before the video starts */}
+          <img src="/hero-poster.jpg" alt="" aria-hidden="true" fetchPriority="high"
+            className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-ink-fade" />
           <div className="container relative z-10 flex h-full flex-col justify-end pb-20 sm:pb-24 text-ink-foreground">
             <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-semibold leading-[1.08] max-w-4xl">

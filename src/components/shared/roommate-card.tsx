@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { RoommateProfile } from "@/lib/types";
 import { MapPin, IndianRupee, Eye, User, Briefcase, Heart, CheckCircle } from "lucide-react";
-import { cn, isVideoUrl, getFirstImageUrl } from "@/lib/utils";
+import { cn, isVideoUrl, getFirstImageUrl, cdnImage } from "@/lib/utils";
 
 interface RoommateCardProps {
   profile: RoommateProfile;
@@ -43,8 +43,8 @@ export function RoommateCard({ profile, onViewDetails, isLiked, onToggleLike, is
             />
           ) : (
             <img
-              src={displayMedia}
-              alt={profile.ownerName} className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              src={cdnImage(displayMedia, 800)}
+              alt={profile.ownerName} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           )
         ) : (
@@ -67,7 +67,7 @@ export function RoommateCard({ profile, onViewDetails, isLiked, onToggleLike, is
         </Button>
       </div>
       <div className="p-4 space-y-3 flex flex-col flex-grow">
-        <h3 className="text-lg font-bold text-card-foreground truncate group-hover:text-primary">{profile.ownerName}, {profile.age}</h3>
+        <h3 className="text-lg font-bold text-card-foreground truncate group-hover:text-primary">{profile.ownerName}{profile.age ? `, ${profile.age}` : ''}</h3>
         
         <div className="flex items-center text-muted-foreground text-sm">
           <MapPin className="w-4 h-4 mr-2" />

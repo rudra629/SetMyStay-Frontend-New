@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { cdnImage } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Copy, Check, X } from "lucide-react";
@@ -22,7 +23,7 @@ export function AdvertisementModal({ isOpen, onClose, title, description, imageU
         {imageUrl && (
           <div className="relative h-52 w-full">
             <img 
-              src={imageUrl} 
+              src={cdnImage(imageUrl, 900)} 
               alt="" 
               className="absolute inset-0 h-full w-full object-cover" 
               onError={(e) => {

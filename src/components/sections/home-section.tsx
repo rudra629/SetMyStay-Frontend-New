@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useLiteMode } from "@/lib/perf";
 import { ArrowRight, ArrowUpRight, BedDouble, Building2, Users, ShieldCheck, Search, KeyRound, ChevronDown } from "lucide-react";
@@ -10,7 +10,6 @@ import { RoommateCard } from "@/components/shared/roommate-card";
 import { SwipeDeck } from "@/components/shared/swipe-deck";
 import { Reveal } from "@/components/motion/reveal";
 import { cn } from "@/lib/utils";
-import heroVideoUrl from "@/assets/hero-building.mp4";
 interface HomeSectionProps {
   featuredProperties: Listing[];
   featuredPGs?: Listing[];
@@ -56,6 +55,14 @@ export function HomeSection({
   const contentY = useTransform(scrollYProgress, [0, 1], [0, 200]);
   const contentOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
   const lite = useLiteMode();
+  // Same video, re-encoded: 1080p (5.2 MB, was 9.5 MB, visually identical) for big screens,
+  // 720p (2.3 MB) for phones and data-saver. Picked once, before the video starts.
+  const [heroVideoUrl] = useState(() => {
+    if (typeof window === "undefined") return "/hero-1080.mp4";
+    const small = window.matchMedia("(max-width: 900px)").matches;
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    return small || conn?.saveData ? "/hero-720.mp4" : "/hero-1080.mp4";
+  });
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     const v = videoRef.current; if (!v) return;
@@ -76,6 +83,7 @@ export function HomeSection({
           muted
           playsInline
           preload="auto"
+          poster="/hero-poster.jpg"
           className="absolute inset-0 h-full w-full object-cover"
           src={heroVideoUrl}
         />

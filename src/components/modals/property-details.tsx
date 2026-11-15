@@ -6,7 +6,7 @@ import { DetailsModalWrapper } from './details-modal-wrapper';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, IndianRupee, Home, BedDouble, ChevronLeft, ChevronRight, Lock, MessageSquare, Phone, Clock, User } from 'lucide-react';
-import { cn, isVideoUrl, whatsappLink } from '@/lib/utils';
+import { cn, isVideoUrl, whatsappLink, cdnImage } from '@/lib/utils';
 
 interface PropertyDetailsProps {
   listing: Listing | null;
@@ -114,13 +114,13 @@ const MediaGallery = ({ listing, isUnlocked, onUnlock }: { listing: Listing; isU
             ) : (
               <div className="absolute inset-0 flex items-center justify-center bg-slate-900/10 dark:bg-black/40 overflow-hidden">
                 <img 
-                  src={src as string} 
+                  src={cdnImage(src as string, 400)} 
                   alt="" 
                   aria-hidden="true"
                   className="absolute inset-0 h-full w-full object-cover filter blur-md opacity-30 scale-110 pointer-events-none select-none" 
                 />
                 <img 
-                  src={src as string} 
+                  src={cdnImage(src as string, 1600)} 
                   alt={`${listing.title} media ${index + 1}`} 
                   className="relative z-10 max-h-full max-w-full object-contain" 
                   onError={(e) => {

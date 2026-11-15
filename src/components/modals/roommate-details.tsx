@@ -6,7 +6,7 @@ import { DetailsModalWrapper } from './details-modal-wrapper';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, IndianRupee, User, Eye, Cake, ChevronLeft, ChevronRight, Lock, MessageSquare, Phone, Sparkles, CigaretteOff, Leaf, Drumstick, Utensils, PawPrint } from 'lucide-react';
-import { isVideoUrl } from '@/lib/utils';
+import { isVideoUrl, whatsappLink, cdnImage } from '@/lib/utils';
 
 interface RoommateDetailsProps {
   profile: RoommateProfile | null;
@@ -70,13 +70,13 @@ const MediaGallery = ({ profile }: { profile: RoommateProfile }) => {
              ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-slate-900/10 dark:bg-black/40 overflow-hidden">
                   <img 
-                    src={src as string} 
+                    src={cdnImage(src as string, 400)} 
                     alt="" 
                     aria-hidden="true"
                     className="absolute inset-0 h-full w-full object-cover filter blur-md opacity-30 scale-110 pointer-events-none select-none" 
                   />
                   <img 
-                    src={src as string} 
+                    src={cdnImage(src as string, 1600)} 
                     alt={`${profile.ownerName} media ${index + 1}`} 
                     className="relative z-10 max-h-full max-w-full object-contain" 
                     onError={(e) => {
@@ -150,7 +150,7 @@ export function RoommateDetails({ profile, onClose, isUnlocked, onUnlock, onChat
           <div className="p-4 bg-muted rounded-lg flex items-center gap-3">
             <Cake className="w-6 h-6 text-primary"/>
             <div>
-              <p className="font-semibold text-lg">{profile.age || 'N/A'} years</p>
+              <p className="font-semibold text-lg">{profile.age ? `${profile.age} years` : 'Age not shared'}</p>
               <p className="text-muted-foreground">{profile.gender || 'Any'}</p>
             </div>
           </div>
@@ -220,14 +220,29 @@ export function RoommateDetails({ profile, onClose, isUnlocked, onUnlock, onChat
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
-          <Button size="lg" className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white" onClick={onChat} disabled={!isUnlocked}>
-            <MessageSquare className="w-5 h-5 mr-2" /> Chat on WhatsApp
-          </Button>
-          <a href={`tel:${profile.contactPhonePrimary}`} className="flex-1 pointer-events-none">
-            <Button size="lg" variant="outline" className="w-full pointer-events-auto" disabled={!isUnlocked}>
-                <Phone className="w-5 h-5 mr-2" /> Call
+          {/* Opens WhatsApp with the person's number (same as the property pop-up) */}
+          {isUnlocked && profile.contactPhonePrimary ? (
+            <Button asChild size="lg" className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white">
+              <a href={whatsappLink(profile.contactPhonePrimary, `Hi ${profile.ownerName || ''}, I saw your roommate profile on SetMyStay.`.replace('Hi ,', 'Hi,'))} target="_blank" rel="noopener noreferrer">
+                <MessageSquare className="w-5 h-5 mr-2" /> Chat on WhatsApp
+              </a>
             </Button>
-          </a>
+          ) : (
+            <Button size="lg" className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white" disabled>
+              <MessageSquare className="w-5 h-5 mr-2" /> Chat on WhatsApp
+            </Button>
+          )}
+          {isUnlocked && profile.contactPhonePrimary ? (
+            <Button asChild size="lg" variant="outline" className="flex-1">
+              <a href={`tel:${String(profile.contactPhonePrimary).replace(/[^\d+]/g, '')}`}>
+                <Phone className="w-5 h-5 mr-2" /> Call
+              </a>
+            </Button>
+          ) : (
+            <Button size="lg" variant="outline" className="flex-1" disabled>
+              <Phone className="w-5 h-5 mr-2" /> Call
+            </Button>
+          )}
           <Button size="lg" variant="ghost" className="flex-1" onClick={onClose}>
                 Close
            </Button>

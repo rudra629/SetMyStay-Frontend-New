@@ -24,7 +24,11 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { formatDistanceToNow } from 'date-fns';
+
+// Top of the budget slider = no upper limit, so listings above ₹1 lakh/month are still shown
+const BUDGET_NO_LIMIT = 100000;
 
 interface ListingsSectionProps {
   /**
@@ -89,9 +93,9 @@ const FilterPanel = ({
   <div className="space-y-6">
     {/* Common Filter: Budget */}
     <div className="space-y-2">
-      <Label>Max Budget: ₹{filters.budget.toLocaleString()}</Label>
+      <Label>Max Budget: {filters.budget >= BUDGET_NO_LIMIT ? 'No limit' : `₹${filters.budget.toLocaleString('en-IN')}`}</Label>
       <Slider
-        min={5000} max={100000} step={1000}
+        min={5000} max={BUDGET_NO_LIMIT} step={1000}
         value={[filters.budget]}
         onValueChange={([val]) => handleFilterChange('budget', val)}
       />
@@ -265,7 +269,7 @@ export function ListingsSection({
   const filteredListings = useMemo(() => {
     return listings.filter(item => {
       // Common filters
-      if (item.rent > filters.budget) return false;
+      if (filters.budget < BUDGET_NO_LIMIT && item.rent > filters.budget) return false;
       if (filters.state && !item.state.toLowerCase().includes(filters.state.toLowerCase())) return false;
       if (filters.city && !item.city.toLowerCase().includes(filters.city.toLowerCase())) return false;
       if (filters.locality && !item.locality.toLowerCase().includes(filters.locality.toLowerCase())) return false;

@@ -1,6 +1,6 @@
 import type { Listing } from "@/lib/types";
 import { MapPin, Home, BedDouble, Heart, ArrowUpRight, CheckCircle } from "lucide-react";
-import { cn, isVideoUrl, getFirstImageUrl } from "@/lib/utils";
+import { cn, isVideoUrl, getFirstImageUrl, cdnImage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 interface PropertyCardProps {
@@ -22,7 +22,7 @@ export function PropertyCard({ listing, onViewDetails, isLiked, onToggleLike, is
           isVideo ? (
             <video src={img} muted playsInline autoPlay={false} className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-110" />
           ) : (
-            <img src={img} alt={listing.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-110" />
+            <img src={cdnImage(img, 800)} alt={listing.title} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-110" />
           )
         ) : (
           <div className="grid h-full place-items-center bg-muted"><Home className="h-10 w-10 text-muted-foreground" /></div>

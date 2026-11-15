@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform } from "motion/react";
 import { Heart, X, RotateCcw, MapPin, Info, Sparkles } from "lucide-react";
 import type { AnyListing, Listing, RoommateProfile } from "@/lib/types";
-import { cn, isVideoUrl, getFirstImageUrl } from "@/lib/utils";
-import { recordSwipe, fetchSwipeState } from "@/lib/app-settings";
+import { cn, isVideoUrl, getFirstImageUrl, cdnImage } from "@/lib/utils";
+import { recordSwipe, fetchSwipeState, undoSwipe } from "@/lib/app-settings";
 
 interface SwipeDeckProps {
   items: AnyListing[];
@@ -96,7 +96,12 @@ export function SwipeDeck({ items, likedItemIds, onToggleLike, onViewDetails, cl
 
       <div className="mt-8 flex items-center gap-6">
         <SwipeButton label="Pass" disabled={done} onClick={() => setTrigger({ dir: -1, n: Date.now() })} variant="pass"><X className="h-7 w-7" /></SwipeButton>
-        <button aria-label="Undo" disabled={index === 0} onClick={() => setIndex((i) => Math.max(0, i - 1))}
+        <button aria-label="Undo" disabled={index === 0} onClick={() => {
+          setIndex((i) => Math.max(0, i - 1));
+          // Bringing the card back also gives the swipe back
+          setLeft((l) => (l === null ? l : l + 1));
+          undoSwipe().then((st) => { setLeft(st.left); setResetsAt(st.resetsAt); });
+        }}
           className="grid h-12 w-12 place-items-center rounded-full border border-border bg-card text-muted-foreground transition hover:text-foreground hover:rotate-[-45deg] disabled:opacity-40 duration-300">
           <RotateCcw className="h-5 w-5" />
         </button>
@@ -164,7 +169,7 @@ function SwipeCard({ item, depth, trigger, onSwiped, onInfo }: { item: AnyListin
           isVideo ? (
             <video src={img} muted playsInline autoPlay={false} className="absolute inset-0 h-full w-full object-cover" />
           ) : (
-            <img src={img} alt={title} draggable={false} className="absolute inset-0 h-full w-full object-cover" />
+            <img src={cdnImage(img, 900)} alt={title} draggable={false} decoding="async" className="absolute inset-0 h-full w-full object-cover" />
           )
         ) : <div className="absolute inset-0 bg-brass opacity-60" />}
         <div className="absolute inset-0 bg-ink-fade" />

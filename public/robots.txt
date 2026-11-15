@@ -1,14 +1,7 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+# Admin and staff panels are not for search engines
+Disallow: /admin
+Disallow: /staff
+
+Sitemap: https://set-my-stay-frontend-new.vercel.app/sitemap.xml

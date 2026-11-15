@@ -102,7 +102,7 @@ export const listingToRoommateProfile = (listing: Listing): RoommateProfile => {
     id: listing.id,
     propertyType: 'Roommate',
     ownerName: listing.ownerName || listing.title,
-    age: listing.age || (listing as any).age || 25,
+    age: listing.age || (listing as any).age || undefined, // no made-up age when the person didn't give one
     rent: listing.rent,
     city: listing.city,
     locality: listing.locality,
@@ -134,7 +134,7 @@ const adaptRoommateToProfile = (data: any): RoommateProfile => {
     id: data.id.toString(),
     propertyType: 'Roommate',
     ownerName: data.user_name || data.owner_name || 'User',
-    age: data.age || 25,
+    age: data.age || undefined,
     rent: data.budget || data.rent || 0,
     city: data.city || data.location_preference || '',
     locality: data.location_preference || data.area || '',
