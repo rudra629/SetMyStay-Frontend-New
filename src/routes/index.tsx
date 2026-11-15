@@ -103,6 +103,13 @@ function Home() {
   const [allRoommates, setAllRoommates] = useState<RoommateProfile[]>([]);
   const [pricing, setPricing] = useState<PricingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // The page-change fade only plays after the first page change (not on first load)
+  const [hasNavigated, setHasNavigated] = useState(false);
+  const prevPageRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevPageRef.current !== null && prevPageRef.current !== activePage) setHasNavigated(true);
+    prevPageRef.current = activePage;
+  }, [activePage]);
   const [featuredProperties, setFeaturedProperties] = useState<Listing[]>([]);
   const [featuredPGs, setFeaturedPGs] = useState<Listing[]>([]);
   const [featuredRoommates, setFeaturedRoommates] = useState<RoommateProfile[]>([]);
@@ -279,10 +286,9 @@ function Home() {
           const withProp = shuffledRoommates.filter(r => r.hasProperty);
           setFeaturedRoommates(withProp.length > 0 ? withProp.slice(0, 6) : shuffledRoommates.slice(0, 6));
 
-          const liveCoupons = await getCoupons();
-          setActiveCoupons(liveCoupons);
+          getCoupons().then(setActiveCoupons).catch(() => {});
 
-          const liveAds = await getAdvertisements();
+          const liveAds = await getAdvertisements().catch(() => [] as Advertisement[]);
           const userKey = (typeof localStorage !== 'undefined' && (localStorage.getItem('user_email') || localStorage.getItem('user_name'))) || 'guest';
           const lastShown = localStorage.getItem(`setmystay_ad_shown_${userKey}`);
           const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -857,8 +863,9 @@ function Home() {
     setIsPolicyModalOpen(true);
   };
 
-  if (isLoading || !isClient) {
-    // Real homepage text, sent by the server (readable by Google, link previews and AI tools)
+  if (!isClient) {
+    // Server-sent homepage (readable by Google, link previews and AI tools). Replaced by the
+    // real, clickable page the moment the browser is ready; listings load in the background.
     return <HomeStaticShell />;
   }
   
@@ -901,7 +908,7 @@ function Home() {
         onHistoryClick={() => setHistoryModalOpen(true)}
       />
       
-      <main key={activePage} className={`flex-grow animate-page-in ${activePage === "home" ? "" : "pt-24"}`}>
+      <main key={activePage} className={`flex-grow ${hasNavigated ? "animate-page-in" : ""} ${activePage === "home" ? "" : "pt-24"}`}>
         {activePage === 'home' && (
           <HomeSection 
             featuredProperties={featuredProperties} 
@@ -913,9 +920,16 @@ function Home() {
             likedItemIds={likedItemIds}
             onToggleLike={handleToggleLike}
             unlockedIds={unlocks.unlockedIds}
+            isLoadingData={isLoading}
           />
         )}
-        {(['pg', 'rentals', 'roommates', 'my-properties', 'liked-properties'].includes(activePage)) && (
+        {isLoading && (['pg', 'rentals', 'roommates', 'my-properties', 'liked-properties'].includes(activePage)) && (
+          <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-muted-foreground">
+            <LoadingSpinner className="h-10 w-10 text-primary" />
+            <p>Loading listings…</p>
+          </div>
+        )}
+        {!isLoading && (['pg', 'rentals', 'roommates', 'my-properties', 'liked-properties'].includes(activePage)) && (
             <ListingsSection
               key={activePage} 
               type={getPageType()}

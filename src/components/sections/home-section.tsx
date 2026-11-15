@@ -20,6 +20,8 @@ interface HomeSectionProps {
   likedItemIds: Set<string>;
   onToggleLike: (itemId: string) => void;
   unlockedIds: Set<string>;
+  /** True while listings/roommates are still downloading (page is already usable). */
+  isLoadingData?: boolean;
 }
 
 const services = [
@@ -44,9 +46,11 @@ export function HomeSection({
   onNavigate,
   likedItemIds,
   onToggleLike,
-  unlockedIds
+  unlockedIds,
+  isLoadingData = false,
 }: HomeSectionProps) {
-  const swipeDeckItems = allRoommates.length > 0
+  // While loading, don't show placeholder roommates (they'd be swapped out a moment later)
+  const swipeDeckItems = isLoadingData ? [] : allRoommates.length > 0
     ? allRoommates
     : (featuredRoommates.length > 0 ? featuredRoommates : dummyRoommates);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -145,7 +149,7 @@ export function HomeSection({
               <SwipeDeck items={swipeDeckItems}
                 likedItemIds={likedItemIds} onToggleLike={onToggleLike} onViewDetails={onViewDetails} className="[&_p.mt-4]:text-ink-foreground/60" />
             ) : (
-              <div className="mx-auto grid h-[520px] max-w-[380px] place-items-center rounded-[2rem] glass text-ink-foreground/70 text-center p-8">New listings are on their way.</div>
+              <div className="mx-auto grid h-[520px] max-w-[380px] place-items-center rounded-[2rem] glass text-ink-foreground/70 text-center p-8">{isLoadingData ? "Loading roommates…" : "New listings are on their way."}</div>
             )}
           </Reveal>
         </div>
