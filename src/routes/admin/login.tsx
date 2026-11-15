@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, User, Home, MailCheck, ArrowLeft } from 'lucide-react';
+import { Lock, User, Home, MailCheck, ArrowLeft, KeyRound } from 'lucide-react';
 import { LoadingSpinner } from '@/components/icons';
 import api from '@/lib/api';
 
@@ -38,7 +38,12 @@ const DEVICE_KEY = 'setmystay_admin_device';
 function AdminLoginPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [step, setStep] = useState<'password' | 'code'>('password');
+  const [step, setStep] = useState<'password' | 'code' | 'forgot' | 'reset'>('password');
+  // Forgot-password flow
+  const [resetChallengeId, setResetChallengeId] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -146,6 +151,75 @@ function AdminLoginPage() {
     }
   };
 
+  // ---- Forgot password ----
+  const requestResetCode = async () => {
+    const { data } = await api.post('/auth/admin/forgot-password/', { username: username.trim() });
+    setResetChallengeId(data.challenge_id);
+    setEmailHint(data.email_hint || 'the admin email');
+    setResendIn(data.resend_after_seconds || 45);
+    setResetCode('');
+    setStep('reset');
+    toast({ title: 'Check your email', description: data.message || 'If this is an admin account, a reset code was sent.' });
+  };
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      await requestResetCode();
+    } catch (error: any) {
+      const wait = error?.response?.data?.retry_after;
+      if (wait) setResendIn(wait);
+      toast({ title: 'Could not send code', description: errorText(error, 'Please try again.'), variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetResend = async () => {
+    setIsLoading(true);
+    try {
+      await requestResetCode();
+    } catch (error: any) {
+      const wait = error?.response?.data?.retry_after;
+      if (wait) setResendIn(wait);
+      toast({ title: 'Could not resend', description: errorText(error, 'Please try again.'), variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 8) {
+      toast({ title: 'Password too short', description: 'Use at least 8 characters.', variant: 'destructive' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: 'Passwords do not match', description: 'Type the same new password in both boxes.', variant: 'destructive' });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      await api.post('/auth/admin/reset-password/', {
+        challenge_id: resetChallengeId,
+        code: resetCode.trim(),
+        new_password: newPassword,
+      });
+      localStorage.removeItem(DEVICE_KEY); // all remembered devices were signed out
+      toast({ title: 'Password changed', description: 'Sign in with your new password.' });
+      setPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setResetCode('');
+      setStep('password');
+    } catch (error: any) {
+      toast({ title: 'Could not change password', description: errorText(error, 'Please try again.'), variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!isMounted) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
@@ -160,7 +234,10 @@ function AdminLoginPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Admin Panel Access</CardTitle>
           <CardDescription>
-            {step === 'password' ? 'Step 1 of 2: sign in with your admin account.' : 'Step 2 of 2: enter the code from your email.'}
+            {step === 'password' ? 'Step 1 of 2: sign in with your admin account.'
+              : step === 'code' ? 'Step 2 of 2: enter the code from your email.'
+              : step === 'forgot' ? 'Reset your password: we will email you a code.'
+              : 'Enter the code from your email and choose a new password.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -183,9 +260,14 @@ function AdminLoginPage() {
                     autoComplete="current-password" required className="pl-10" />
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="show-password" checked={showPassword} onCheckedChange={(v) => setShowPassword(v === true)} />
-                <Label htmlFor="show-password" className="text-sm font-normal">Show Password</Label>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="show-password" checked={showPassword} onCheckedChange={(v) => setShowPassword(v === true)} />
+                  <Label htmlFor="show-password" className="text-sm font-normal">Show Password</Label>
+                </div>
+                <Button variant="link" type="button" className="px-0 h-auto text-sm" onClick={() => setStep('forgot')}>
+                  Forgot password?
+                </Button>
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Checking...' : 'Continue'}
@@ -224,6 +306,73 @@ function AdminLoginPage() {
                   <ArrowLeft className="w-4 h-4 mr-1" />Back
                 </Button>
                 <Button variant="link" type="button" className="px-0" disabled={resendIn > 0 || isLoading} onClick={handleResend}>
+                  {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {step === 'forgot' && (
+            <form onSubmit={handleForgotSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgot-username">Admin username</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="forgot-username" value={username} onChange={(e) => setUsername(e.target.value)}
+                    placeholder="admin" autoComplete="username" required className="pl-10" />
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading || !username.trim()}>
+                {isLoading ? 'Sending...' : 'Send reset code'}
+              </Button>
+              <Button variant="link" type="button" className="px-0 text-sm" onClick={() => setStep('password')}>
+                <ArrowLeft className="w-4 h-4 mr-1" />Back to sign in
+              </Button>
+            </form>
+          )}
+
+          {step === 'reset' && (
+            <form onSubmit={handleResetSubmit} className="space-y-4">
+              <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">
+                <MailCheck className="mt-0.5 h-5 w-5 shrink-0" />
+                <span>If <strong>{username || 'this'}</strong> is an admin account, we sent a 6-digit code to <strong>{emailHint}</strong>. It expires in 10 minutes. Check spam too.</span>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reset-otp">Email code</Label>
+                <Input id="reset-otp" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={resetCode}
+                  onChange={(e) => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="123456" required autoFocus className="text-center text-2xl tracking-[0.5em] font-semibold" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New password</Label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="new-password" type={showPassword ? 'text' : 'password'} value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 8 characters"
+                    autoComplete="new-password" required className="pl-10" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm new password</Label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="confirm-password" type={showPassword ? 'text' : 'password'} value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Type it again"
+                    autoComplete="new-password" required className="pl-10" />
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="show-new-password" checked={showPassword} onCheckedChange={(v) => setShowPassword(v === true)} />
+                <Label htmlFor="show-new-password" className="text-sm font-normal">Show passwords</Label>
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading || resetCode.length !== 6}>
+                {isLoading ? 'Saving...' : 'Change password'}
+              </Button>
+              <div className="flex items-center justify-between text-sm">
+                <Button variant="link" type="button" className="px-0" onClick={() => setStep('password')}>
+                  <ArrowLeft className="w-4 h-4 mr-1" />Back to sign in
+                </Button>
+                <Button variant="link" type="button" className="px-0" disabled={resendIn > 0 || isLoading} onClick={handleResetResend}>
                   {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
                 </Button>
               </div>
