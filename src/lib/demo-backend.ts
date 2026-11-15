@@ -4,18 +4,22 @@ import type { AxiosAdapter, InternalAxiosRequestConfig } from "axios";
 import { dummyProperties, dummyRoommates, dummyCoupons, dummyAdvertisements, dummyStaff } from "./data";
 
 function resolveDemoMode(): boolean {
+  // Only a build setting can turn demo mode on; visitors can't switch it on from the address bar.
   if (import.meta.env.VITE_DEMO_MODE === "true") return true;
   if (typeof window === "undefined") return false;
+  // Clean up browsers that turned demo mode on earlier with ?demo=1, including the fake test-account login.
   try {
-    const q = new URLSearchParams(window.location.search).get("demo");
-    if (q === "1") localStorage.setItem("setmystay_demo", "1");
-    if (q === "0") localStorage.removeItem("setmystay_demo");
-    return localStorage.getItem("setmystay_demo") === "1";
-  } catch {
-    return false;
-  }
+    const hadDemo = localStorage.getItem("setmystay_demo") === "1";
+    ["setmystay_demo", "setmystay_demo_db_v2", "setmystay_demo_unlocks"].forEach((k) => localStorage.removeItem(k));
+    if (hadDemo || localStorage.getItem("access_token") === "demo-access-token") {
+      ["access_token", "refresh_token", "is_profile_complete", "user_name", "user_email", "user_phone", "user_address", "user_pic",
+        "setmystay_user_data", "setmystay_isLoggedIn", "setmystay_purchase_history"]
+        .forEach((k) => localStorage.removeItem(k));
+    }
+  } catch { /* storage blocked: nothing to clean */ }
+  return false;
 }
-// Off by default: real server. Enable with VITE_DEMO_MODE=true or ?demo=1 (?demo=0 disables).
+// Off on the live site. Enable only with VITE_DEMO_MODE=true at build time (local testing).
 export const DEMO_MODE = resolveDemoMode();
 
 const HOME_IMG = [
