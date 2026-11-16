@@ -184,7 +184,7 @@ export function PropertyDetails({ listing, onClose, isUnlocked, onUnlock, onChat
       : [];
 
   return (
-    <DetailsModalWrapper isOpen={!!listing} onClose={onClose} title={listing.title}>
+    <DetailsModalWrapper isOpen={!!listing} onClose={onClose} title={listing.title} listingId={listing.id}>
       <div className="space-y-6">
         <MediaGallery listing={listing} isUnlocked={isUnlocked} onUnlock={onUnlock} />
         

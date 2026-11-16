@@ -155,7 +155,7 @@ export function RoommateDetails({ profile, onClose, isUnlocked, onUnlock, onChat
   preferencesList = preferencesList.map(pref => pref.replace(/["\[\]]/g, '').trim());
 
   return (
-    <DetailsModalWrapper isOpen={!!profile} onClose={onClose} title={`${profile.ownerName}'s Profile`}>
+    <DetailsModalWrapper isOpen={!!profile} onClose={onClose} title={`${profile.ownerName}'s Profile`} listingId={profile.id}>
        <div className="space-y-6">
         <MediaGallery profile={profile} />
         

@@ -1917,6 +1917,7 @@ function AdminDashboard() {
                 <DialogContent className="max-w-3xl">
                     <DialogHeader>
                         <DialogTitle>{currentItem && ('title' in currentItem ? currentItem.title : currentItem?.ownerName)}</DialogTitle>
+                        {currentItem && <p className="font-mono text-xs text-muted-foreground">Listing ID: <span className="font-semibold text-foreground">{listingCode(currentItem.id)}</span></p>}
                     </DialogHeader>
                     {currentItem && (
                         <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
