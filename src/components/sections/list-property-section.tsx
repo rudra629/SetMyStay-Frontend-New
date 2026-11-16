@@ -85,6 +85,9 @@ const formSchema = z.object({
   description: z.string().optional(),
   amenities: z.array(z.string()).optional(),
   brokerStatus: z.enum(['With Broker', 'Without Broker']).optional(),
+  bhk: z.string().optional(),
+  furnishing: z.string().optional(),
+  roomType: z.string().optional(),
   aadhaarCard: fileSchema,
   electricityBill: fileSchema.optional(),
   noc: z.any().optional(),
@@ -118,6 +121,15 @@ const formSchema = z.object({
             message: "Broker status is required for rentals.",
             path: ['brokerStatus'],
         });
+    }
+    if (data.propertyType === 'RENTAL' && !data.bhk) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Please select the BHK.', path: ['bhk'] });
+    }
+    if (data.propertyType === 'PG' && !data.roomType) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Please select the room type.', path: ['roomType'] });
+    }
+    if ((data.propertyType === 'RENTAL' || data.propertyType === 'PG') && !data.furnishing) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Please select the furnishing.', path: ['furnishing'] });
     }
     if ((data.propertyType === 'RENTAL' || data.propertyType === 'PG')) {
         if (!data.electricityBill) {
@@ -312,6 +324,9 @@ export function ListPropertySection({ onSubmit }: ListPropertySectionProps) {
         vendor_number: data.vendorNumber || '',
         amenities: JSON.stringify(data.amenities || []), 
         is_broker: data.brokerStatus === 'With Broker',
+        bhk: data.bhk || '',
+        furnishing: data.furnishing || '',
+        occupancy_type: data.roomType || '',
         gender_preference: data.gender || '',
         sharing_status: data.roommateStatus === 'hasProperty' ? 'Living in' : (data.roommateStatus === 'needsProperty' ? 'Moving soon' : ''),
         images: mediaFiles,
@@ -452,6 +467,57 @@ export function ListPropertySection({ onSubmit }: ListPropertySectionProps) {
                   </> 
                 )}
                 
+                {propertyType === 'RENTAL' && (
+                  <FormField control={form.control} name="bhk" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>BHK</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select BHK" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="1 RK">1 RK</SelectItem>
+                          <SelectItem value="1 BHK">1 BHK</SelectItem>
+                          <SelectItem value="2 BHK">2 BHK</SelectItem>
+                          <SelectItem value="3 BHK">3 BHK</SelectItem>
+                          <SelectItem value="4+ BHK">4+ BHK</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                )}
+                {propertyType === 'PG' && (
+                  <FormField control={form.control} name="roomType" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Room Type</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select room type" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="Single Room">Single Room</SelectItem>
+                          <SelectItem value="Double Sharing">Double Sharing</SelectItem>
+                          <SelectItem value="Triple Sharing">Triple Sharing</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                )}
+                {(propertyType === 'RENTAL' || propertyType === 'PG') && (
+                  <FormField control={form.control} name="furnishing" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Furnishing</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select furnishing" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="Furnished">Furnished</SelectItem>
+                          <SelectItem value="Semi-Furnished">Semi-Furnished</SelectItem>
+                          <SelectItem value="Unfurnished">Unfurnished</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                )}
+
                 {propertyType === 'RENTAL' && (
                   <FormField control={form.control} name="brokerStatus" render={({ field }) => (
                     <FormItem className="space-y-3">

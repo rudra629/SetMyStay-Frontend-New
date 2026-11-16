@@ -67,6 +67,9 @@ const adaptPropertyToListing = (data: any): Listing => {
     contactPhoneSecondary: data.phone_secondary || undefined,
     description: data.description,
     furnishedStatus: data.furnishing || 'Unfurnished',
+    bhk: data.bhk || undefined,
+    roomType: data.occupancy_type || undefined,
+    genderPreference: data.gender_preference || undefined,
     
     // 👇 FIX: Regex strips the [, ], and " characters from the corrupted database strings
     amenities: data.amenities ? data.amenities.map((a: any) => typeof a === 'string' ? a.replace(/[\[\]"]/g, '').trim() : (a.name || '').replace(/[\[\]"]/g, '').trim()).filter(Boolean) : [],

@@ -53,13 +53,29 @@ export function loadTheme(): SiteTheme | null {
   }
 }
 
-export function saveTheme(theme: SiteTheme | null) {
-  if (theme) localStorage.setItem(THEME_KEY, JSON.stringify(theme));
-  else localStorage.removeItem(THEME_KEY);
+export function cacheTheme(theme: SiteTheme | null) {
+  try {
+    if (theme) localStorage.setItem(THEME_KEY, JSON.stringify(theme));
+    else localStorage.removeItem(THEME_KEY);
+  } catch { /* storage blocked */ }
   applyTheme(theme);
   window.dispatchEvent(new Event(THEME_EVENT));
 }
 
+/** Admin: save the colours on the server so every visitor sees them. Throws if the server refuses. */
+export async function saveTheme(theme: SiteTheme | null) {
+  const { default: api } = await import("./api");
+  const { data } = theme
+    ? await api.post("/site-theme/", theme)
+    : await api.post("/site-theme/", { reset: true });
+  cacheTheme((data?.theme as SiteTheme) || null);
+}
+
+/** Everyone: show the last known colours at once, then the server's current ones. */
 export function syncSiteTheme() {
   applyTheme(loadTheme());
+  import("./api")
+    .then(({ default: api }) => api.get("/site-theme/"))
+    .then(({ data }) => cacheTheme((data?.theme as SiteTheme) || null))
+    .catch(() => { /* offline: keep the cached colours */ });
 }

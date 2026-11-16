@@ -89,8 +89,12 @@ export function ThemeCustomizer() {
         </div>
 
         <div className="flex gap-3">
-          <Button onClick={() => { saveTheme(theme); toast.success("Property card colours saved"); }}>Save colours</Button>
-          <Button variant="outline" onClick={() => { saveTheme(null); setTheme(PRESETS[0]); toast.success("Reset to original colours"); }}>Reset to original</Button>
+          <Button onClick={() => saveTheme(theme)
+            .then(() => toast.success("Property card colours saved for all visitors"))
+            .catch(() => toast.error("Not saved — could not reach the server."))}>Save colours</Button>
+          <Button variant="outline" onClick={() => saveTheme(null)
+            .then(() => { setTheme(PRESETS[0]); toast.success("Reset to original colours for all visitors"); })
+            .catch(() => toast.error("Not reset — could not reach the server."))}>Reset to original</Button>
         </div>
       </CardContent>
     </section>

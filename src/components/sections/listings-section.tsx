@@ -67,9 +67,69 @@ const initialFilters: FilterState = {
   brokerStatus: "any",
 };
 
-const amenitiesList = ['AC', 'WiFi', 'Parking', 'Gym', 'Pool', 'Elevator', 'Security', 'Balcony', 'Power Backup', 'Meals', 'Laundry', 'Housekeeping', 'Garden', 'Piped Gas'];
-const roommatePreferencesList = ['Non-Smoker', 'Vegetarian', 'Non-Vegetarian', 'Clean', 'Drinker', 'Pet-Friendly'];
-const allFeaturesList = [...new Set([...amenitiesList, ...roommatePreferencesList])];
+// Same names the "List your property" form saves, so ticking a feature finds the listings that have it.
+const featuresByType: Record<ListingType, { value: string; label: string }[]> = {
+  rentals: [
+    { value: 'AC', label: 'AC' }, { value: 'Wi-Fi', label: 'Wi-Fi' }, { value: 'Parking', label: 'Parking' },
+    { value: 'Gymnasium', label: 'Gym' }, { value: 'Lift/Elevator', label: 'Lift' }, { value: 'Security', label: 'Security' },
+    { value: 'Balcony', label: 'Balcony' }, { value: 'Power Backup', label: 'Power Backup' },
+  ],
+  pg: [
+    { value: 'AC', label: 'AC' }, { value: 'Wi-Fi', label: 'Wi-Fi' }, { value: 'In-house Mess', label: 'Meals / Mess' },
+    { value: 'Washing Machine (Private/Common)', label: 'Washing Machine' }, { value: 'Lift/Elevator', label: 'Lift' },
+    { value: 'Security', label: 'Security' }, { value: 'Power Backup', label: 'Power Backup' }, { value: 'Refrigerator', label: 'Fridge' },
+  ],
+  roommate: [
+    { value: 'Non-Smoker', label: 'Non-Smoker' }, { value: 'Vegetarian', label: 'Vegetarian' }, { value: 'Pet-Friendly', label: 'Pet-Friendly' },
+    { value: 'Wi-Fi', label: 'Wi-Fi' }, { value: 'AC', label: 'AC' }, { value: 'Attached Bathroom', label: 'Attached Bathroom' },
+    { value: 'Lift/Elevator', label: 'Lift' }, { value: 'Reserved Parking', label: 'Parking' },
+  ],
+};
+
+// Other names owners may have picked that mean the same feature.
+const featureAliases: Record<string, string[]> = {
+  'wi-fi': ['wifi', 'broadband internet'],
+  'parking': ['reserved parking', 'car parking', 'two-wheeler parking', 'visitor parking'],
+  'reserved parking': ['parking', 'car parking'],
+  'gymnasium': ['gym', 'health club'],
+  'lift/elevator': ['lift', 'elevator'],
+  'security': ['gated security', '24x7 security guard', 'cctv surveillance', 'cctv cameras'],
+  'power backup': ['electricity backup', 'generator backup'],
+  'in-house mess': ['meals', 'breakfast/lunch/dinner', 'tiffin service'],
+  'washing machine (private/common)': ['laundry', 'laundry service'],
+  'balcony': ['sit-out area'],
+};
+const norm = (v?: string) => (v || '').toString().trim().toLowerCase();
+const hasFeature = (itemFeatures: string[] | undefined, wanted: string) => {
+  const names = new Set((itemFeatures || []).map(norm));
+  const w = norm(wanted);
+  return names.has(w) || (featureAliases[w] || []).some((a) => names.has(a));
+};
+
+// Turn whatever was saved ("Semi", "1BHK", "Single"...) into the filter's options.
+const furnishingOf = (raw?: string) => {
+  const v = norm(raw);
+  if (!v) return '';
+  if (v.startsWith('semi')) return 'Semi-Furnished';
+  if (v.startsWith('un') || v === 'no') return 'Unfurnished';
+  if (v.startsWith('full') || v === 'yes' || v === 'furnished') return 'Furnished';
+  return '';
+};
+const bhkOf = (raw?: string) => {
+  const v = norm(raw);
+  if (!v) return '';
+  if (/\brk\b|^\d*\s*rk$/.test(v)) return '1 RK';
+  const n = parseInt(v, 10);
+  if (!n) return '';
+  return n >= 4 ? '4+ BHK' : `${n} BHK`;
+};
+const roomTypeOf = (raw?: string) => {
+  const v = norm(raw);
+  if (v.startsWith('single')) return 'Single Room';
+  if (v.startsWith('double')) return 'Double Sharing';
+  if (v.startsWith('triple')) return 'Triple Sharing';
+  return '';
+};
 
 
 const FilterPanel = ({
@@ -108,10 +168,7 @@ const FilterPanel = ({
           searchPlaceholder="Search State..."
           emptyText="No state found."
           value={filters.state}
-          onChange={(val) => {
-            handleFilterChange('state', val);
-            handleFilterChange('city', '');
-          }}
+          onChange={(val) => handleFilterChange('state', val === "All States" ? "" : val)}
           options={["All States", ...indianStates]}
         />
         <SearchableSelect 
@@ -121,7 +178,7 @@ const FilterPanel = ({
           value={filters.city}
           onChange={(val) => handleFilterChange('city', val === "All Cities" ? "" : val)}
           options={["All Cities", ...citySuggestions]}
-          disabled={!filters.state || filters.state === "All States"}
+          disabled={!filters.state}
         />
         <AutocompleteInput 
           placeholder="Enter Area / Locality"
@@ -132,16 +189,17 @@ const FilterPanel = ({
     </div>
 
     <div className="space-y-4">
-      {(type === 'rentals' || type === 'pg') && (
+      {type === 'rentals' && (
         <>
           <Select value={filters.propertyType} onValueChange={(val) => handleFilterChange('propertyType', val)}>
             <SelectTrigger><SelectValue placeholder="Property Type" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="any">Any BHK</SelectItem>
+              <SelectItem value="1 RK">1 RK</SelectItem>
               <SelectItem value="1 BHK">1 BHK</SelectItem>
               <SelectItem value="2 BHK">2 BHK</SelectItem>
               <SelectItem value="3 BHK">3 BHK</SelectItem>
-              <SelectItem value="4 BHK">4 BHK</SelectItem>
+              <SelectItem value="4+ BHK">4+ BHK</SelectItem>
             </SelectContent>
           </Select>
           <div className="space-y-2">
@@ -166,14 +224,17 @@ const FilterPanel = ({
         </Select>
       )}
       
+      {type !== 'roommate' && (
       <div className="space-y-2">
           <Label>Furnishing</Label>
           <RadioGroup value={filters.furnishedStatus} onValueChange={(val) => handleFilterChange('furnishedStatus', val as 'any' | 'Furnished' | 'Semi-Furnished' | 'Unfurnished')} className="flex gap-2">
               <Label className="flex-1 p-2 border rounded-md text-center cursor-pointer has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary"><RadioGroupItem value="any" className="sr-only"/>Any</Label>
               <Label className="flex-1 p-2 border rounded-md text-center cursor-pointer has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary"><RadioGroupItem value="Furnished" className="sr-only"/>Full</Label>
               <Label className="flex-1 p-2 border rounded-md text-center cursor-pointer has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary"><RadioGroupItem value="Semi-Furnished" className="sr-only"/>Semi</Label>
+              <Label className="flex-1 p-2 border rounded-md text-center cursor-pointer has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary"><RadioGroupItem value="Unfurnished" className="sr-only"/>None</Label>
           </RadioGroup>
       </div>
+      )}
 
         {type === 'roommate' && (
           <Select value={filters.gender} onValueChange={(val) => handleFilterChange('gender', val)}>
@@ -187,12 +248,12 @@ const FilterPanel = ({
           </Select>
         )}
       <div className="space-y-2">
-          <Label>Features &amp; Preferences</Label>
+          <Label>{type === 'roommate' ? 'Preferences' : 'Amenities'}</Label>
           <div className="grid grid-cols-2 gap-2">
-          {allFeaturesList.map(a => (
-              <div key={a} className="flex items-center space-x-2">
-              <Checkbox id={`amenity-${a}`} checked={filters.amenities.includes(a)} onCheckedChange={(checked) => handleAmenityChange(a, !!checked)} />
-              <Label htmlFor={`amenity-${a}`} className="text-sm font-normal">{a}</Label>
+          {featuresByType[type].map(({ value, label }) => (
+              <div key={value} className="flex items-center space-x-2">
+              <Checkbox id={`amenity-${type}-${value}`} checked={filters.amenities.includes(value)} onCheckedChange={(checked) => handleAmenityChange(value, !!checked)} />
+              <Label htmlFor={`amenity-${type}-${value}`} className="text-sm font-normal">{label}</Label>
               </div>
           ))}
           </div>
@@ -270,27 +331,30 @@ export function ListingsSection({
     return listings.filter(item => {
       // Common filters
       if (filters.budget < BUDGET_NO_LIMIT && item.rent > filters.budget) return false;
-      if (filters.state && !item.state.toLowerCase().includes(filters.state.toLowerCase())) return false;
-      if (filters.city && !item.city.toLowerCase().includes(filters.city.toLowerCase())) return false;
-      if (filters.locality && !item.locality.toLowerCase().includes(filters.locality.toLowerCase())) return false;
+      if (filters.state && filters.state !== 'All States' && norm(item.state) !== norm(filters.state)) return false;
+      if (filters.city && !norm(item.city).includes(norm(filters.city))) return false;
+      if (filters.locality && !norm(item.locality).includes(norm(filters.locality))) return false;
 
       // Type-specific filters
       if (item.propertyType !== 'Roommate') { // Is a Listing
           const l = item as Listing;
-          if (filters.furnishedStatus !== 'any' && filters.furnishedStatus !== l.furnishedStatus) return false;
+          if (filters.furnishedStatus !== 'any' && furnishingOf(l.furnishedStatus) !== filters.furnishedStatus) return false;
           if (type === 'rentals' && filters.brokerStatus !== 'any' && filters.brokerStatus !== l.brokerStatus) return false;
-          if (l.propertyType === 'Rental' && filters.propertyType !== 'any' && filters.propertyType !== l.size) return false;
-          if (l.propertyType === 'PG' && filters.roomType !== 'any' && filters.roomType !== l.size) return false;
-          if (filters.amenities.length > 0 && !filters.amenities.every(a => l.amenities?.includes(a))) return false;
+          if (type === 'rentals' && filters.propertyType !== 'any' && bhkOf(l.bhk) !== filters.propertyType) return false;
+          if (type === 'pg' && filters.roomType !== 'any' && roomTypeOf(l.roomType) !== filters.roomType) return false;
+          if (filters.amenities.length > 0 && !filters.amenities.every(a => hasFeature(l.amenities, a))) return false;
       } else { // Is a RoommateProfile
           const r = item as RoommateProfile;
-          if (filters.gender !== 'any' && filters.gender !== r.gender) return false;
-          if (filters.amenities.length > 0 && !filters.amenities.every(a => r.preferences?.includes(a))) return false;
+          if (filters.gender !== 'any' && norm(r.gender) !== norm(filters.gender)) return false;
+          if (filters.amenities.length > 0 && !filters.amenities.every(a => hasFeature(r.preferences, a))) return false;
       }
 
       return true;
     });
   }, [listings, filters, type]);
+
+  const filtersActive = JSON.stringify({ ...filters, amenities: [...filters.amenities].sort() }) !== JSON.stringify(initialFilters);
+  const clearFilters = () => setFilters({ ...initialFilters });
 
   const filterPanelProps = {
     filters,
@@ -367,7 +431,12 @@ export function ListingsSection({
                 </SheetContent>
               </Sheet>
             </div>
-            <p className="text-sm text-muted-foreground hidden md:block">{filteredListings.length} results found</p>
+            <div className="flex items-center gap-3 ml-auto">
+              <p className="text-sm text-muted-foreground">{filteredListings.length} {filteredListings.length === 1 ? 'result' : 'results'} found</p>
+              {filtersActive && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>Clear filters</Button>
+              )}
+            </div>
                       </div>
           {type === 'roommate' && filteredListings.length > 0 && (
             <SwipeDeck items={filteredListings} likedItemIds={likedItemIds} onToggleLike={onToggleLike} onViewDetails={(i, t) => onViewDetails(i, t)} className="py-6" />
@@ -388,6 +457,7 @@ export function ListingsSection({
                 <Heart className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="text-xl font-semibold mt-4">No results found</h3>
                 <p className="text-muted-foreground mt-2">Try adjusting your filters to find what you're looking for.</p>
+                {filtersActive && <Button variant="outline" className="mt-4" onClick={clearFilters}>Clear filters</Button>}
             </div>
           )}
         </main>

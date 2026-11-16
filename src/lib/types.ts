@@ -26,6 +26,9 @@ export interface Coupon {
 
 export interface Listing {
   id: string;
+  bhk?: string;            // e.g. "2 BHK" (rentals)
+  roomType?: string;       // e.g. "Double Sharing" (PG)
+  genderPreference?: string;
   propertyType: 'PG' | 'Rental' | 'Roommate';
   title: string;
   rent: number;

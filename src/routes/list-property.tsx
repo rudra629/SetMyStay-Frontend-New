@@ -91,8 +91,8 @@ function ListPropertyPage() {
 
       // --- SPECS ---
       payload.append("sq_ft", formData.area ? formData.area.toString() : "500");
-      payload.append("bhk", "1BHK");
-      payload.append("furnishing", "Semi");
+      if (formData.bhk) payload.append("bhk", formData.bhk);
+      if (formData.furnishing) payload.append("furnishing", formData.furnishing);
       payload.append("status", "PENDING");
 
       if (formData.age) {
@@ -121,7 +121,7 @@ function ListPropertyPage() {
       } else if (formData.property_type === "RENTAL") {
         payload.append("is_broker", formData.is_broker ? "True" : "False");
       } else {
-        payload.append("occupancy_type", "Single");
+        payload.append("occupancy_type", formData.occupancy_type || "");
         payload.append("gender_preference", "Any");
       }
 

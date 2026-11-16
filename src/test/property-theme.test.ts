@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { applyTheme, loadTheme, PRESETS, saveTheme, THEME_KEY } from "@/lib/site-theme";
+import { applyTheme, cacheTheme, loadTheme, PRESETS, THEME_KEY } from "@/lib/site-theme";
 
 afterEach(() => {
   applyTheme(null);
@@ -17,11 +17,11 @@ describe("Property-only Appearance", () => {
     expect(root.style.getPropertyValue("--primary")).toBe("");
   });
 
-  it("saves the selected property palette and resets its overrides", () => {
-    saveTheme(PRESETS[2]);
+  it("keeps the server palette locally and resets its overrides", () => {
+    cacheTheme(PRESETS[2]);
     expect(loadTheme()?.name).toBe("Holi");
     expect(document.documentElement.style.getPropertyValue("--property-card")).toBe("#ffffff");
-    saveTheme(null);
+    cacheTheme(null);
     expect(loadTheme()).toBeNull();
     expect(document.documentElement.style.getPropertyValue("--property-card")).toBe("");
   });
