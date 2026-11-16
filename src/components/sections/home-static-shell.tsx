@@ -1,4 +1,5 @@
 import { LoadingSpinner } from "@/components/icons";
+import { TrustStrip } from "@/components/sections/trust-strip";
 
 /**
  * The homepage as plain HTML, sent by the server and shown while the site loads its data.
@@ -61,6 +62,7 @@ export function HomeStaticShell() {
           </div>
         </section>
 
+        <TrustStrip />
         <section className="container py-16 sm:py-24">
           <div className="mb-16 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold leading-tight max-w-2xl">A stay that suits you</h2>

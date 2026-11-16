@@ -10,6 +10,7 @@ import { RoommateCard } from "@/components/shared/roommate-card";
 import { SwipeDeck } from "@/components/shared/swipe-deck";
 import { Reveal } from "@/components/motion/reveal";
 import { cn } from "@/lib/utils";
+import { TrustStrip } from "@/components/sections/trust-strip";
 interface HomeSectionProps {
   featuredProperties: Listing[];
   featuredPGs?: Listing[];
@@ -113,6 +114,8 @@ export function HomeSection({
           Scroll <ChevronDown className="h-4 w-4 animate-scroll-cue" />
         </div>
       </section>
+
+      <TrustStrip />
 
       {/* SERVICES */}
       <section className="container py-16 sm:py-24">
