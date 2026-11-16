@@ -280,8 +280,8 @@ function Home() {
           const shuffledPGs = [...pgsToUse].sort(() => 0.5 - Math.random());
           const shuffledRoommates = [...realRoommates].sort(() => 0.5 - Math.random());
 
-          setFeaturedProperties(shuffledRentals.slice(0, 3));
-          setFeaturedPGs(shuffledPGs.slice(0, 3));
+          setFeaturedProperties(shuffledRentals.slice(0, 4));
+          setFeaturedPGs(shuffledPGs.slice(0, 4));
 
           const withProp = shuffledRoommates.filter(r => r.hasProperty);
           setFeaturedRoommates(withProp.length > 0 ? withProp.slice(0, 6) : shuffledRoommates.slice(0, 6));
@@ -944,6 +944,7 @@ function Home() {
                 activePage === 'liked-properties' ? 'My Liked Properties' :
                 undefined
               }
+              showOwnerStatus={activePage === 'my-properties'}
             />
         )}
       </main>

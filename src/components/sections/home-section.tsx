@@ -219,7 +219,7 @@ function FeaturedRail<T extends { id: string }>({ title, items, render, onAll }:
         {items.map((it, i) => (
           <motion.div key={it.id} initial={{ opacity: 0, x: 60 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
             transition={{ delay: Math.min(i, 5) * 0.08, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="w-[300px] shrink-0 snap-start sm:w-[340px]">
+            className="w-[300px] shrink-0 snap-start sm:w-[340px] xl:w-[calc((100%-4.5rem)/4)]">
             {render(it)}
           </motion.div>
         ))}

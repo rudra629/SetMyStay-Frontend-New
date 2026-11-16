@@ -31,7 +31,8 @@ import { format } from 'date-fns';
 import { UserProfilesTable } from '@/components/admin/user-profiles-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Listing, RoommateProfile, AnyListing } from '@/lib/types';
-import { isVideoUrl, whatsappLink } from '@/lib/utils';
+import { isVideoUrl, whatsappLink, listingCode, matchesListingCode } from '@/lib/utils';
+import { ListingIdLookup } from '@/components/admin/listing-id-lookup';
 
 import api, { getAdminProperties, updatePropertyStatus, updateRoommateStatus, deleteProperty, deleteRoommate, listingToRoommateProfile } from '@/lib/api';
 
@@ -118,8 +119,9 @@ function StaffDashboard() {
         
         if (!searchTerm) return listings;
         
-        return listings.filter(item => 
-            ('title' in item ? item.title : item.ownerName).toLowerCase().includes(searchTerm)
+        return listings.filter(item =>
+            matchesListingCode(searchTerm, item.id) ||
+            String(('title' in item ? item.title : item.ownerName) || '').toLowerCase().includes(searchTerm)
         );
     };
 
@@ -197,7 +199,7 @@ function StaffDashboard() {
                         <div className="relative w-full sm:w-auto">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input 
-                                placeholder="Search by title or name..." 
+                                placeholder="Search by title, name or ID..." 
                                 value={searchTerms[status]}
                                 onChange={(e) => handleSearchChange(status, e.target.value)}
                                 className="pl-10 w-full sm:w-64"
@@ -210,6 +212,7 @@ function StaffDashboard() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead>ID</TableHead>
                                     <TableHead>Title/Name</TableHead>
                                     <TableHead>Type</TableHead>
                                     <TableHead>Submitted</TableHead>
@@ -219,6 +222,7 @@ function StaffDashboard() {
                             <TableBody>
                                 {listings.map(p => (
                                     <TableRow key={p.id}>
+                                        <TableCell className="font-mono text-xs whitespace-nowrap">{listingCode(p.id)}</TableCell>
                                         <TableCell className="font-medium">{'title' in p ? p.title : p.ownerName}</TableCell>
                                         <TableCell className="capitalize">{p.propertyType}</TableCell>
                                         <TableCell>{p.submittedAt ? format(new Date(p.submittedAt), 'dd MMM, yyyy') : 'N/A'}</TableCell>
@@ -258,6 +262,7 @@ function StaffDashboard() {
             </header>
 
             <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                <ListingIdLookup items={[...properties, ...roommates] as AnyListing[]} onOpen={handleViewDetails} />
                 <Tabs defaultValue="pending">
                     <div className="overflow-x-auto">
                         <TabsList className="mb-8 whitespace-nowrap">

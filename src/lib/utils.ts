@@ -59,3 +59,16 @@ export function cdnImage(url: string | null | undefined, width: number): string 
   if (/^[a-z]{1,3}_[^/]+\//.test(rest) && !/^v\d+\//.test(rest)) return u;
   return `${u.slice(0, i + marker.length)}f_auto,q_auto,c_limit,w_${width}/${rest}`;
 }
+
+/** Public listing ID shown to owners and support, e.g. 21 -> "SMS-00021". */
+export function listingCode(id: string | number | null | undefined): string {
+  const n = String(id ?? '').replace(/\D/g, '');
+  return n ? `SMS-${n.padStart(5, '0')}` : '';
+}
+
+/** True if a search text matches a listing's ID ("SMS-00021", "sms21", "21"). */
+export function matchesListingCode(query: string, id: string | number | null | undefined): boolean {
+  const q = String(query || '').trim().toLowerCase().replace(/^sms[-\s]*/, '');
+  if (!/^\d+$/.test(q)) return false;
+  return Number(q) === Number(String(id ?? '').replace(/\D/g, ''));
+}

@@ -22,7 +22,7 @@ import { Heart, Filter, LayoutGrid, List, Bell, Layers } from 'lucide-react';
 import { SwipeDeck } from '@/components/shared/swipe-deck';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { cn } from '@/lib/utils';
+import { cn, listingCode } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { formatDistanceToNow } from 'date-fns';
@@ -47,6 +47,8 @@ interface ListingsSectionProps {
    * Initial search filters to apply.
    */
   initialSearchFilters: Partial<FilterState> | null;
+  /** My Properties: show each listing's review status and its listing ID under the card */
+  showOwnerStatus?: boolean;
   likedItemIds: Set<string>;
   onToggleLike: (itemId: string) => void;
   unlockedIds: Set<string>;
@@ -263,6 +265,31 @@ const FilterPanel = ({
 );
 
 
+const STATUS_STYLE: Record<string, { label: string; className: string; hint: string }> = {
+  approved: { label: 'Live', className: 'bg-emerald-100 text-emerald-800 border-emerald-200', hint: 'Visible to everyone on SetMyStay.' },
+  pending: { label: 'Under review', className: 'bg-amber-100 text-amber-800 border-amber-200', hint: 'Our team is checking your listing. It goes live once approved.' },
+  rejected: { label: 'Rejected', className: 'bg-red-100 text-red-800 border-red-200', hint: 'Not approved. Call us with your listing ID to know why.' },
+};
+
+function OwnerStatusBar({ id, status }: { id: string; status?: string }) {
+  const st = STATUS_STYLE[status || 'pending'] || STATUS_STYLE.pending;
+  const code = listingCode(id);
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-xl border bg-card px-3 py-2 text-sm" title={st.hint}>
+      <span className={cn('rounded-full border px-2.5 py-0.5 text-xs font-semibold', st.className)}>{st.label}</span>
+      <button
+        type="button"
+        className="font-mono text-xs text-muted-foreground hover:text-foreground"
+        title="Copy listing ID"
+        onClick={() => { navigator.clipboard?.writeText(code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => {}); }}
+      >
+        {copied ? 'Copied!' : <>ID: <span className="font-semibold text-foreground">{code}</span></>}
+      </button>
+    </div>
+  );
+}
+
 export function ListingsSection({ 
   type, 
   listings, 
@@ -272,7 +299,8 @@ export function ListingsSection({
   onToggleLike,
   unlockedIds,
   pageTitle: customPageTitle,
-  inquiries
+  inquiries,
+  showOwnerStatus = false,
 }: ListingsSectionProps) {
   const [filters, setFilters] = useState<FilterState>({ ...initialFilters, ...initialSearchFilters });
   const [pageTitle, setPageTitle] = useState('');
@@ -447,9 +475,16 @@ export function ListingsSection({
             {filteredListings.map(item => {
               const itemType = item.propertyType === 'Roommate' ? 'roommate' : 'listing';
               const isUnlocked = unlockedIds.has(item.id);
-              return itemType === 'roommate' 
+              const card = itemType === 'roommate' 
                 ? <RoommateCard key={item.id} profile={item as RoommateProfile} onViewDetails={(i) => onViewDetails(i, 'roommate')} isLiked={likedItemIds.has(item.id)} onToggleLike={() => onToggleLike(item.id)} isUnlocked={isUnlocked} />
-                : <PropertyCard key={item.id} listing={item as Listing} onViewDetails={(i) => onViewDetails(i, 'listing')} isLiked={likedItemIds.has(item.id)} onToggleLike={() => onToggleLike(item.id)} isUnlocked={isUnlocked} />
+                : <PropertyCard key={item.id} listing={item as Listing} onViewDetails={(i) => onViewDetails(i, 'listing')} isLiked={likedItemIds.has(item.id)} onToggleLike={() => onToggleLike(item.id)} isUnlocked={isUnlocked} />;
+              if (!showOwnerStatus) return card;
+              return (
+                <div key={item.id} className="flex flex-col gap-2">
+                  <OwnerStatusBar id={item.id} status={(item as any).status} />
+                  {card}
+                </div>
+              );
             })}
           </div>
           {filteredListings.length === 0 && (

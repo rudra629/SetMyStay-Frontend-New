@@ -49,7 +49,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, startOfWeek, addDays, getWeek, formatDistanceToNow, differenceInHours } from 'date-fns';
-import { cn, isVideoUrl, whatsappLink } from '@/lib/utils';
+import { cn, isVideoUrl, whatsappLink, listingCode, matchesListingCode } from '@/lib/utils';
+import { ListingIdLookup } from '@/components/admin/listing-id-lookup';
 import { getFromLocalStorage, saveToLocalStorage } from '@/lib/storage';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ThemeCustomizer, DemoDataCard } from '@/components/admin/theme-customizer';
@@ -1107,7 +1108,7 @@ function AdminDashboard() {
 
     const filteredProperties = useMemo(() => {
         return properties.filter(p => {
-            const matchesSearch = propertySearchTerm === '' || (p.title && p.title.toLowerCase().includes(propertySearchTerm.toLowerCase()));
+            const matchesSearch = propertySearchTerm === '' || matchesListingCode(propertySearchTerm, p.id) || (p.title && p.title.toLowerCase().includes(propertySearchTerm.toLowerCase()));
             const matchesType = propertyTypeFilter === 'all' || p.propertyType === propertyTypeFilter;
             return matchesSearch && matchesType;
         });
@@ -1480,6 +1481,9 @@ function AdminDashboard() {
                     </TabsContent>
 
                     <TabsContent value="listings">
+                        <div className="mb-8">
+                            <ListingIdLookup items={[...properties, ...roommates] as AnyListing[]} onOpen={handleViewDetails} />
+                        </div>
                         <Card className="mb-8">
                             <CardHeader><CardTitle className="text-2xl">Pending Listings</CardTitle></CardHeader>
                             <CardContent>
@@ -1510,7 +1514,7 @@ function AdminDashboard() {
                                             <div className="relative w-full sm:w-auto">
                                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                                 <Input
-                                                    placeholder="Search by title..."
+                                                    placeholder="Search by title or ID..."
                                                     value={propertySearchTerm}
                                                     onChange={(e) => setPropertySearchTerm(e.target.value)}
                                                     className="pl-10 w-full sm:w-48"
@@ -1537,12 +1541,13 @@ function AdminDashboard() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Title</TableHead><TableHead>Type</TableHead><TableHead>Vendor #</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
+                                                <TableHead>ID</TableHead><TableHead>Title</TableHead><TableHead>Type</TableHead><TableHead>Vendor #</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {filteredProperties.map(p => (
                                                 <TableRow key={p.id}>
+                                                    <TableCell className="font-mono text-xs whitespace-nowrap">{listingCode(p.id)}</TableCell>
                                                     <TableCell className="font-medium">{p.title}</TableCell>
                                                     <TableCell>{p.propertyType}</TableCell>
                                                     <TableCell>{p.vendorNumber || 'N/A'}</TableCell>
@@ -1560,12 +1565,13 @@ function AdminDashboard() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Name</TableHead><TableHead>Budget</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
+                                                <TableHead>ID</TableHead><TableHead>Name</TableHead><TableHead>Budget</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {roommates.map(r => (
                                                 <TableRow key={r.id}>
+                                                    <TableCell className="font-mono text-xs whitespace-nowrap">{listingCode(r.id)}</TableCell>
                                                     <TableCell className="font-medium">{r.ownerName}</TableCell>
                                                     <TableCell>₹{r.rent.toLocaleString()}</TableCell>
                                                     <TableCell><StatusBadge status={r.status} /></TableCell>
