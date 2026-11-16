@@ -109,6 +109,20 @@ const generateYearlyData = () => {
     }));
 };
 
+// How long listings waited before this staff member reviewed them, e.g. "18 h 28 min (1 listing)".
+const formatReviewWait = (s: any): string => {
+    let mins: number | null = typeof s?.avg_review_wait_minutes === 'number' ? s.avg_review_wait_minutes : null;
+    if (mins === null && typeof s?.avg_processing_hours === 'number') mins = Math.round(s.avg_processing_hours * 60);
+    if (mins === null) return 'No reviews yet';
+    let text: string;
+    if (mins < 1) text = 'under 1 min';
+    else if (mins < 60) text = `${mins} min`;
+    else if (mins < 48 * 60) text = `${Math.floor(mins / 60)} h${mins % 60 ? ` ${mins % 60} min` : ''}`;
+    else text = `${Math.round(mins / (24 * 60))} days`;
+    const n = s?.reviews_count;
+    return typeof n === 'number' ? `${text} (${n} ${n === 1 ? 'listing' : 'listings'})` : text;
+};
+
 const PasswordChangeForm = ({ currentPassword, onSave, onClose }: { currentPassword: string; onSave: (newPassword: string) => void; onClose: () => void; }) => {
     const { toast } = useToast();
     const [passwords, setPasswords] = useState({
@@ -914,7 +928,23 @@ function AdminDashboard() {
 
             fetchAdminData();
 
-            setExplicitVendors(getFromLocalStorage('explicitVendors', []));
+            // Vendor numbers live on the server; move any that were saved only in this browser up once.
+            (async () => {
+                const local: string[] = getFromLocalStorage('explicitVendors', []) || [];
+                try {
+                    let { data } = await api.get('/vendor-numbers/');
+                    let numbers: string[] = data?.numbers || [];
+                    for (const v of local) {
+                        if (!numbers.includes(v)) {
+                            try { ({ data } = await api.post('/vendor-numbers/', { vendor_number: v })); numbers = data?.numbers || numbers; } catch { /* already used on a listing */ }
+                        }
+                    }
+                    if (local.length) localStorage.removeItem('explicitVendors');
+                    setExplicitVendors(numbers);
+                } catch {
+                    setExplicitVendors(local);
+                }
+            })();
             api.get('/pricing/').then((res: any) => {
                 if (res.data && res.data.listings) {
                     setPricing(res.data);
@@ -1034,18 +1064,19 @@ function AdminDashboard() {
         });
     };
 
-    const handleCreateVendor = (vendorNumber: string) => {
+    const handleCreateVendor = async (vendorNumber: string) => {
         if ((explicitVendors || []).includes(vendorNumber) || vendorNumbers.some(v => v.vendorNumber === vendorNumber)) {
             toast({ title: 'Error', description: 'This vendor number already exists.', variant: 'destructive' });
             return;
         }
-
-        const updatedVendors = [...(explicitVendors || []), vendorNumber];
-        setExplicitVendors(updatedVendors);
-        saveToLocalStorage('explicitVendors', updatedVendors);
-
-        toast({ title: 'Success', description: `Vendor "${vendorNumber}" has been created.` });
-        setCreateVendorModalOpen(false);
+        try {
+            const { data } = await api.post('/vendor-numbers/', { vendor_number: vendorNumber });
+            setExplicitVendors(data?.numbers || [...(explicitVendors || []), vendorNumber]);
+            toast({ title: 'Success', description: `Vendor "${vendorNumber}" has been created.` });
+            setCreateVendorModalOpen(false);
+        } catch (e: any) {
+            toast({ title: 'Not saved', description: e?.response?.data?.error || 'Could not reach the server. Nothing was changed.', variant: 'destructive' });
+        }
     };
 
     const handleLogout = () => {
@@ -1715,7 +1746,7 @@ function AdminDashboard() {
                                                 <TableHead>User ID</TableHead>
                                                 <TableHead>Approved</TableHead>
                                                 <TableHead>Rejected</TableHead>
-                                                <TableHead>Avg. Processing Time</TableHead>
+                                                <TableHead title="Average time a listing waited between being submitted and this staff member approving or rejecting it. It is not time spent online.">Avg. Time to Review</TableHead>
                                                 <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -1731,7 +1762,7 @@ function AdminDashboard() {
                                                         {s.rejected_count || 0}
                                                     </TableCell>
                                                     <TableCell>
-                                                        {s.avg_processing_hours !== 'N/A' && s.avg_processing_hours !== undefined ? `${s.avg_processing_hours} hours` : 'N/A'}
+                                                        {formatReviewWait(s)}
                                                     </TableCell>
                                                     <TableCell className="text-right">
                                                         <Button variant="ghost" size="icon" onClick={() => handleOpenStaffForm(s)}><Edit className="h-4 w-4" /></Button>
