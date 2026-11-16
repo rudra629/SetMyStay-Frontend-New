@@ -215,7 +215,13 @@
 }
 html, body { overflow-x: clip; }
 html { scrollbar-gutter: stable; }
-body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !important; }
+/* Pop-ups, menus and the pricing dialog lock scrolling. The scrollbar space is already kept by
+   scrollbar-gutter above, so cancel the library's extra 15px right margin (it shrank the page
+   and left a white strip on the right). "html" makes these win over the library's own styles. */
+html body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !important; }
+html .with-scroll-bars-hidden { padding-right: 0 !important; }
+html .right-scroll-bar-position { right: 0 !important; }
+html .width-before-scroll-bar { margin-right: 0 !important; }
 
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
