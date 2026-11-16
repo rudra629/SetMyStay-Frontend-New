@@ -15,7 +15,6 @@ export const Route = createFileRoute("/admin/")({
 });
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from "@tanstack/react-router";
 import { useNavigate } from "@tanstack/react-router";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Eye, Building, Users, LockOpen, Home, X as XIcon, HelpCircle, CheckCircle, Trash2, ChevronLeft, ChevronRight, LogOut, XCircle, PlusCircle, Edit, ImageIcon, Ticket, Settings, KeyRound, ShieldQuestion, Mail, Phone, MapPin, FileCheck, Search, Filter, Calendar as CalendarIcon, FileText, Bell, UserPlus, Clock, User as UserIcon, Star, MessageSquare, Briefcase, Info } from 'lucide-react';
@@ -835,6 +834,8 @@ function AdminDashboard() {
     useEffect(() => {
         let isMounted = true;
         const checkAuth = async () => {
+            // Only check while we're actually on the admin panel (not while leaving it for the main site)
+            if (!window.location.pathname.startsWith('/admin')) return;
             const authStatus = localStorage.getItem('admin_authenticated');
             const token = localStorage.getItem('panel_access_token');
             if (authStatus !== 'true' || !token) {
@@ -843,12 +844,13 @@ function AdminDashboard() {
                 return;
             }
             try {
-                await api.get('/auth/verify-admin/');
+                await api.get('/auth/verify-admin/', { authSlot: 'panel' } as any);
                 if (isMounted) {
                     setIsAuthenticated(true);
                     setIsLoading(false);
                 }
             } catch (err) {
+                if (!isMounted || !window.location.pathname.startsWith('/admin')) return;
                 console.error("Admin verification failed:", err);
                 localStorage.removeItem('admin_authenticated');
                 localStorage.removeItem('panel_access_token');
@@ -857,7 +859,8 @@ function AdminDashboard() {
         };
         checkAuth();
         return () => { isMounted = false; };
-    }, [navigate]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -1086,6 +1089,22 @@ function AdminDashboard() {
         localStorage.removeItem('panel_access_token');
         localStorage.removeItem('panel_refresh_token');
         navigate({ to: '/admin/login', replace: true });
+    };
+
+    // Turn off "remember this device" for this browser only: the next sign-in here asks for the email code.
+    const handleRequireCodeOnThisDevice = async () => {
+        const deviceToken = localStorage.getItem('setmystay_admin_device');
+        if (!deviceToken) {
+            toast({ title: 'Already required', description: 'This device already asks for the email verification code at sign-in.' });
+            return;
+        }
+        try {
+            await api.post('/auth/admin/forget-this-device/', { device_token: deviceToken });
+            localStorage.removeItem('setmystay_admin_device');
+            toast({ title: 'Verification required', description: 'This device will ask for the email code the next time you sign in.' });
+        } catch {
+            toast({ title: 'Error', description: 'Could not reach the server. Nothing was changed.', variant: 'destructive' });
+        }
     };
 
     const handleForgetDevices = async () => {
@@ -1355,10 +1374,10 @@ function AdminDashboard() {
                     <h1 className="text-2xl font-bold text-slate-800">SetMyStay Admin</h1>
                     <div className="flex items-center gap-2 flex-wrap">
                         <Button asChild>
-                            <Link to="/">
+                            <a href="/">
                                 <Home className="w-4 h-4 mr-2" />
                                 Go to Main Site
-                            </Link>
+                            </a>
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -1371,6 +1390,7 @@ function AdminDashboard() {
                                 <DropdownMenuLabel>Admin Account Security</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => setPasswordModalOpen(true)}>Change Password</DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleRequireCodeOnThisDevice}>Require verification code on this device</DropdownMenuItem>
                                 <DropdownMenuItem onClick={handleForgetDevices}>Forget all remembered devices</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

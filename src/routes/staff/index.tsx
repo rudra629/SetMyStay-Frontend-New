@@ -17,7 +17,6 @@ export const Route = createFileRoute("/staff/")({
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "@tanstack/react-router";
 import { Home, LogOut, CheckCircle, Trash2, XCircle, FileText, ChevronLeft, ChevronRight, Search, Phone, MapPin, User as UserIcon, Briefcase, FileCheck } from 'lucide-react';
-import { Link } from "@tanstack/react-router";
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -74,6 +73,8 @@ function StaffDashboard() {
     useEffect(() => {
         let isMounted = true;
         const checkStaffAuth = async () => {
+            // Only check while we're actually on the staff panel (not while leaving it for the main site)
+            if (!window.location.pathname.startsWith('/staff')) return;
             const authStatus = localStorage.getItem('staff_authenticated');
             const token = localStorage.getItem('panel_access_token');
             if (authStatus !== 'true' || !token) {
@@ -82,12 +83,13 @@ function StaffDashboard() {
                 return;
             }
             try {
-                await api.get('/auth/verify-staff/');
+                await api.get('/auth/verify-staff/', { authSlot: 'panel' } as any);
                 if (isMounted) {
                     setIsAuthenticated(true);
                     fetchListings().finally(() => setIsLoading(false));
                 }
             } catch (err) {
+                if (!isMounted || !window.location.pathname.startsWith('/staff')) return;
                 console.error("Staff verification failed:", err);
                 localStorage.removeItem('staff_authenticated');
                 localStorage.removeItem('panel_access_token');
@@ -96,7 +98,8 @@ function StaffDashboard() {
         };
         checkStaffAuth();
         return () => { isMounted = false; };
-    }, [navigate]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     
     const handleLogout = () => {
         localStorage.removeItem('staff_authenticated');
@@ -248,10 +251,10 @@ function StaffDashboard() {
                      <h1 className="text-2xl font-bold text-slate-800">SetMyStay Staff Panel</h1>
                      <div className="flex items-center gap-2 flex-wrap">
                         <Button asChild>
-                            <Link to="/">
+                            <a href="/">
                                 <Home className="w-4 h-4 mr-2" />
                                 Go to Main Site
-                            </Link>
+                            </a>
                         </Button>
                         <Button variant="outline" onClick={handleLogout}>
                             <LogOut className="w-4 h-4 mr-2" />

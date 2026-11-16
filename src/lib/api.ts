@@ -29,7 +29,10 @@ export const refreshKey = () => (isPanelPage() ? 'panel_refresh_token' : 'refres
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem(accessKey());
+      // A request may pin its login slot ('panel' or 'site'); otherwise it follows the current page.
+      const slot = (config as any).authSlot as 'panel' | 'site' | undefined;
+      const key = slot === 'panel' ? 'panel_access_token' : slot === 'site' ? 'access_token' : accessKey();
+      const token = localStorage.getItem(key);
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
