@@ -3,6 +3,16 @@ import { createFileRoute } from "@tanstack/react-router";
 // Public address of the site, used for link previews. Set VITE_SITE_URL on Vercel when a custom domain is added.
 const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") || "https://set-my-stay-frontend-new.vercel.app";
 
+const URL_PAGES: Page[] = ['pg', 'rentals', 'roommates', 'my-properties', 'liked-properties'];
+function pageFromUrl(): Page {
+  if (typeof window === 'undefined') return 'home';
+  const p = new URLSearchParams(window.location.search).get('page') as Page | null;
+  return p && URL_PAGES.includes(p) ? p : 'home';
+}
+function urlForPage(page: Page): string {
+  return URL_PAGES.includes(page) ? `/?page=${page}` : '/';
+}
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -98,7 +108,7 @@ function getUserStorageKey(): string {
 
 function Home() {
   const isLoggingOutRef = useRef(false);
-  const [activePage, setActivePage] = useState<Page>("home");
+  const [activePage, setActivePage] = useState<Page>(() => pageFromUrl());
   const [allListings, setAllListings] = useState<Listing[]>([]);
   const [allRoommates, setAllRoommates] = useState<RoommateProfile[]>([]);
   const [pricing, setPricing] = useState<PricingData | null>(null);
@@ -221,19 +231,22 @@ function Home() {
   useEffect(() => {
     if (!isClient) return;
     if (!localStorage.getItem('admin_authenticated') && !localStorage.getItem('staff_authenticated')) return;
-    if (localStorage.getItem('setmystay_panel_split_done')) return;
-    localStorage.setItem('setmystay_panel_split_done', '1');
+    // Checked once per browser session: if the website's login is actually the admin/staff account
+    // (it must never be), move it back to the panel and sign the website out.
+    if (sessionStorage.getItem('setmystay_panel_login_checked')) return;
+    sessionStorage.setItem('setmystay_panel_login_checked', '1');
     const token = localStorage.getItem('access_token');
     if (!token) return;
-    // Is the main site's login really the admin/staff account?
-    api.get('/auth/verify-staff/').then(() => {
-      localStorage.setItem('panel_access_token', token);
-      const r = localStorage.getItem('refresh_token');
-      if (r) localStorage.setItem('panel_refresh_token', r);
+    api.get('/auth/verify-staff/', { authSlot: 'site' } as any).then(() => {
+      if (!localStorage.getItem('panel_access_token')) {
+        localStorage.setItem('panel_access_token', token);
+        const r = localStorage.getItem('refresh_token');
+        if (r) localStorage.setItem('panel_refresh_token', r);
+      }
       ['access_token', 'refresh_token', 'setmystay_isLoggedIn', 'user_email', 'user_name', 'user_phone',
        'user_address', 'user_pic', 'setmystay_user_data', 'setmystay_purchase_history', 'is_profile_complete']
         .forEach((k) => localStorage.removeItem(k));
-      toast({ title: "Please sign in again", description: "The admin panel and the website now keep separate logins." });
+      toast({ title: "Please sign in again", description: "You were signed in to the website with the admin account. Sign in with your own account." });
       setTimeout(() => window.location.reload(), 1500);
     }).catch(() => { /* normal user account: nothing to do */ });
   }, [isClient]);
@@ -453,6 +466,37 @@ function Home() {
   const handleNavigate = (page: Page) => {
     setActivePage(page);
   };
+
+  // /list-property sends signed-out visitors here with ?signin=list: open sign-in, then go back to the form
+  useEffect(() => {
+    if (!isClient) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('signin') === 'list') {
+      window.history.replaceState(window.history.state, '', '/');
+      if (!localStorage.getItem('access_token')) setAuthActionRequired('list your property');
+      else window.location.href = '/list-property';
+    }
+  }, [isClient]);
+
+  // Each section has its own address (/?page=rentals), so the browser/phone Back button,
+  // refresh and shared links all land on the right section.
+  const poppingRef = useRef(false);
+  useEffect(() => {
+    if (!isClient) return;
+    const needsLogin = activePage === 'my-properties' || activePage === 'liked-properties';
+    if (needsLogin && !localStorage.getItem('access_token')) { setActivePage('home'); return; }
+    const want = urlForPage(activePage);
+    const have = window.location.pathname + window.location.search;
+    if (poppingRef.current) { poppingRef.current = false; return; }
+    if (want !== have && window.location.pathname === '/') {
+      window.history.pushState({ ...(window.history.state || {}), smsPage: activePage }, '', want);
+    }
+  }, [activePage, isClient]);
+  useEffect(() => {
+    const onPop = () => { poppingRef.current = true; setActivePage(pageFromUrl()); };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
@@ -788,8 +832,9 @@ function Home() {
     
     const intendedPage = sessionStorage.getItem('setmystay_intended_page');
     if (intendedPage === 'list') {
-      setActivePage('list');
       sessionStorage.removeItem('setmystay_intended_page');
+      window.location.href = '/list-property';
+      return;
     }
     window.location.reload();
   };
@@ -844,6 +889,7 @@ function Home() {
 
   const handleNavigationWithAuth = (page: Page) => {
       if (page === 'list') {
+          if (!isLoggedIn) { setAuthActionRequired('list your property'); return; }
           window.location.href = '/list-property'; 
           return;
       }

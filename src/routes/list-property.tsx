@@ -8,6 +8,23 @@ import { feeFor, fetchAndCachePricing } from "@/lib/app-settings";
 import { createListing } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
+const UNUSED_FEE_KEY = "setmystay_unused_listing_fee";
+
+// Turn a server error into one readable sentence (no raw JSON).
+function friendlyError(error: any): string {
+  const data = error?.response?.data;
+  if (!error?.response) return "We couldn't reach the server. Check your internet and try again.";
+  if (typeof data === "string") return "Something went wrong on our side. Please try again.";
+  if (data?.error) return String(data.error);
+  if (data?.detail) return String(data.detail);
+  if (data && typeof data === "object") {
+    const [field, msgs] = Object.entries(data)[0] || [];
+    const msg = Array.isArray(msgs) ? msgs[0] : msgs;
+    if (field) return `${String(field).replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())}: ${msg}`;
+  }
+  return "Please check that all fields are filled in correctly.";
+}
+
 export const Route = createFileRoute("/list-property")({
   head: () => ({
     meta: [
@@ -31,7 +48,15 @@ function ListPropertyPage() {
   const [formData, setFormData] = useState<any>(null);
   const [listingAmount, setListingAmount] = useState<number>(0);
 
+  const [checkedSignIn, setCheckedSignIn] = useState(false);
+
   useEffect(() => {
+    // Listing needs an account: send signed-out visitors to sign in first (then they come back here)
+    if (!localStorage.getItem('access_token')) {
+      window.location.replace('/?signin=list');
+      return;
+    }
+    setCheckedSignIn(true);
     setListingAmount(feeFor("RENTAL"));
     fetchAndCachePricing().catch(() => {});
   }, []);
@@ -52,13 +77,23 @@ function ListPropertyPage() {
     setFormData(data);
     const computedFee = feeFor(data?.property_type ?? data?.propertyType);
     setListingAmount(computedFee);
+    // Paid before but the upload failed? Submit again with that payment instead of charging twice.
+    const unusedFee = localStorage.getItem(UNUSED_FEE_KEY);
+    if (unusedFee) {
+      submitListing(data, unusedFee);
+      return;
+    }
     setIsPaymentModalOpen(true);
   };
 
   // 2. When Payment is Successful, Send Data to Django
-  const handlePaymentSuccess = async (plan?: { title: string; price: number }) => {
+  const handlePaymentSuccess = async (plan?: { title: string; price: number; paymentId?: string }) => {
+    setIsPaymentModalOpen(false);
+    await submitListing(formData, plan?.paymentId);
+  };
+
+  const submitListing = async (formData: any, paymentId?: string) => {
     try {
-      setIsPaymentModalOpen(false);
       setIsSubmitting(true);
 
       const payload = new FormData();
@@ -71,6 +106,7 @@ function ListPropertyPage() {
       }
 
       // --- BASIC FIELDS ---
+      if (paymentId) payload.append("payment_id", paymentId);
       payload.append("title", formData.title);
       payload.append("description", formData.description || "No description provided");
       payload.append("property_type", formData.property_type);
@@ -153,29 +189,38 @@ function ListPropertyPage() {
       console.log("Submitting Payload...");
 
       await createListing(payload);
+      localStorage.removeItem(UNUSED_FEE_KEY);
 
       toast({
-        title: "Success!",
-        description: "Your property has been submitted for review.",
+        title: "Listing submitted!",
+        description: "Your property has been sent for review. You can see its status in My Properties.",
       });
 
       navigate({ to: "/" });
     } catch (error: any) {
       console.error("Submission Error:", error);
-
-      const serverMessage = error.response?.data
-        ? JSON.stringify(error.response.data)
-        : "Please check that all fields are correct.";
-
+      const status = error?.response?.status;
+      if (status === 402) {
+        // No paid fee available (or it was for a cheaper listing type): ask to pay
+        localStorage.removeItem(UNUSED_FEE_KEY);
+        toast({ title: "Listing fee needed", description: "Please pay the listing fee to submit this listing." });
+        setIsPaymentModalOpen(true);
+        return;
+      }
+      if (paymentId) localStorage.setItem(UNUSED_FEE_KEY, paymentId);
       toast({
-        title: "Submission Failed",
-        description: `Server Error: ${serverMessage}`,
+        title: "Couldn't submit your listing",
+        description: `${friendlyError(error)}${paymentId || localStorage.getItem(UNUSED_FEE_KEY) ? " Your payment is saved — fix this and press Submit again; you won't be charged twice." : ""}`,
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (!checkedSignIn) {
+    return <main className="min-h-screen bg-background" />;
+  }
 
   return (
     <main className="min-h-screen bg-background relative">

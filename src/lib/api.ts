@@ -24,15 +24,21 @@ export const isPanelPage = () =>
   typeof window !== 'undefined' && /^\/(admin|staff)(\/|$)/.test(window.location.pathname);
 export const accessKey = () => (isPanelPage() ? 'panel_access_token' : 'access_token');
 export const refreshKey = () => (isPanelPage() ? 'panel_refresh_token' : 'refresh_token');
+type Slot = 'panel' | 'site';
+const slotKeys = (slot: Slot) => slot === 'panel'
+  ? { access: 'panel_access_token', refresh: 'panel_refresh_token' }
+  : { access: 'access_token', refresh: 'refresh_token' };
 
 // --- 🔐 AUTHENTICATION INTERCEPTOR ---
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
       // A request may pin its login slot ('panel' or 'site'); otherwise it follows the current page.
-      const slot = (config as any).authSlot as 'panel' | 'site' | undefined;
-      const key = slot === 'panel' ? 'panel_access_token' : slot === 'site' ? 'access_token' : accessKey();
-      const token = localStorage.getItem(key);
+      // Remember which login this request used, so a renewal is saved back to that same login
+      // (even if the page changed meanwhile, e.g. admin panel -> main site).
+      const slot: Slot = ((config as any)._slot as Slot) || ((config as any).authSlot as Slot) || (isPanelPage() ? 'panel' : 'site');
+      (config as any)._slot = slot;
+      const token = localStorage.getItem(slotKeys(slot).access);
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -346,8 +352,10 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
+      const slot: Slot = originalRequest._slot || (isPanelPage() ? 'panel' : 'site');
+      const keys = slotKeys(slot);
       try {
-        const refreshToken = localStorage.getItem(refreshKey());
+        const refreshToken = localStorage.getItem(keys.refresh);
         if (refreshToken) {
           // Request a new access token using standard axios (to avoid infinite interceptor loops)
           const refreshResponse = await axios.post(`${API_URL}/auth/refresh/`, {
@@ -357,11 +365,11 @@ api.interceptors.response.use(
           const newAccessToken = refreshResponse.data.access;
           
           // Save the new token
-          localStorage.setItem(accessKey(), newAccessToken);
+          localStorage.setItem(keys.access, newAccessToken);
           
           // If the backend also rotated the refresh token, save that too
           if (refreshResponse.data.refresh) {
-             localStorage.setItem(refreshKey(), refreshResponse.data.refresh);
+             localStorage.setItem(keys.refresh, refreshResponse.data.refresh);
           }
 
           // Update the failed request's header with the new token
@@ -374,9 +382,13 @@ api.interceptors.response.use(
         // If the refresh token is ALSO expired, force a hard logout
         if (typeof window !== 'undefined') {
           const onAdminPage = isPanelPage();
-          localStorage.removeItem(accessKey());
-          localStorage.removeItem(refreshKey());
-          if (onAdminPage) {
+          localStorage.removeItem(keys.access);
+          localStorage.removeItem(keys.refresh);
+          if (slot === 'panel' && !onAdminPage) {
+            // A panel request finished after leaving the panel: sign out of the panel quietly
+            localStorage.removeItem('admin_authenticated');
+            localStorage.removeItem('staff_authenticated');
+          } else if (onAdminPage) {
             localStorage.removeItem('admin_authenticated');
             localStorage.removeItem('staff_authenticated');
             window.location.href = window.location.pathname.startsWith('/staff') ? '/staff/login' : '/admin/login';

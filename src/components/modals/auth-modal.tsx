@@ -224,7 +224,7 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
             <DialogHeader>
               <DialogTitle className="text-center">Welcome to SetMyStay</DialogTitle>
               <DialogDescription className="text-center">
-                Sign in to manage your property listings.
+                Sign in to save likes, unlock owner contacts and list your property.
               </DialogDescription>
             </DialogHeader>
             <div ref={googleWrapRef} className="flex justify-center py-4 w-full">

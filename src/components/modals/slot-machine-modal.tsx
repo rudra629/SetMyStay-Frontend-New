@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Copy, Ticket, Cherry, Gem, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Coupon } from "@/lib/types";
-import { getCoupons } from "@/lib/api";
+import api, { getCoupons } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { loadSettings } from "@/lib/app-settings";
 
 interface SlotMachineModalProps {
   isOpen: boolean;
@@ -32,15 +31,6 @@ const FALLBACK_COUPONS: Coupon[] = [
   { id: 'fallback-2', code: 'STAY20', discountPercentage: 20, isActive: true },
 ];
 
-const getSlotCooldownMs = () => {
-  const hours = loadSettings().slotCooldownHours ?? 24;
-  return hours * 60 * 60 * 1000;
-};
-
-const getAccountSlotKey = () => {
-  const email = (typeof localStorage !== 'undefined' && (localStorage.getItem('user_email') || localStorage.getItem('user_name'))) || 'guest';
-  return `setmystay_last_spun_${email}`;
-};
 
 export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachineModalProps) {
   const [reels, setReels] = useState([0, 0, 0]);
@@ -51,9 +41,12 @@ export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachine
   const [activePrizes, setActivePrizes] = useState<Coupon[]>(prizes?.length ? prizes : FALLBACK_COUPONS);
   const { toast } = useToast();
 
-  const [canPlay, setCanPlay] = useState(true);
+  const [canPlay, setCanPlay] = useState(false);
   const [isLuckySpin, setIsLuckySpin] = useState(false);
   const [cooldownTime, setCooldownTime] = useState('');
+  // When the next spin is allowed, as decided by the server (null = can play now)
+  const [nextSpinAt, setNextSpinAt] = useState<number | null>(null);
+  const [statusLoaded, setStatusLoaded] = useState(false);
 
   // Fetch live coupons from backend when modal opens, fallback to default if DB is empty
   useEffect(() => {
@@ -85,48 +78,38 @@ export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachine
   };
 
   const checkCanPlay = useCallback(() => {
-    const key = getAccountSlotKey();
-    const lastSpunTimestamp = localStorage.getItem(key) || localStorage.getItem('setmystay_last_spun_timestamp');
-    if (!lastSpunTimestamp) {
-      setCanPlay(true);
-      return;
-    }
-
-    const timeSinceLastSpin = Date.now() - parseInt(lastSpunTimestamp, 10);
-    const cooldownMs = getSlotCooldownMs();
-
-    if (timeSinceLastSpin >= cooldownMs) {
-      setCanPlay(true);
-      localStorage.removeItem('setmystay_slot_lucky_spin');
-    } else {
+    if (nextSpinAt && nextSpinAt > Date.now()) {
       setCanPlay(false);
-      const remainingTime = cooldownMs - timeSinceLastSpin;
-      updateCooldownTime(remainingTime);
+      updateCooldownTime(nextSpinAt - Date.now());
+    } else {
+      setCanPlay(statusLoaded);
     }
-  }, []);
+  }, [nextSpinAt, statusLoaded]);
+
+  // Ask the server whether this account may play (the wait is kept on the server, not in the browser)
+  useEffect(() => {
+    if (!isOpen) return;
+    setStatusLoaded(false);
+    api.get('/slot-machine/')
+      .then(({ data }) => {
+        setNextSpinAt(data?.next_spin_at ? new Date(data.next_spin_at).getTime() : null);
+        setIsLuckySpin(!!data?.lucky);
+      })
+      .catch(() => setNextSpinAt(null))
+      .finally(() => setStatusLoaded(true));
+  }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen) {
-      checkCanPlay();
-      const luckySpinStatus = localStorage.getItem('setmystay_slot_lucky_spin') === 'true';
-      setIsLuckySpin(luckySpinStatus);
-
-      let interval: NodeJS.Timeout;
-      if (!canPlay) {
-        interval = setInterval(() => {
-          checkCanPlay();
-        }, 1000);
-      }
-      return () => clearInterval(interval);
-    } else {
-      if (!isSpinning) {
-        setWinner(null);
-        setResultMessage(null);
-      }
+    if (!isOpen) {
+      if (!isSpinning) { setWinner(null); setResultMessage(null); }
+      return;
     }
-  }, [isOpen, isSpinning, canPlay, checkCanPlay]);
+    checkCanPlay();
+    const interval = setInterval(checkCanPlay, 1000);
+    return () => clearInterval(interval);
+  }, [isOpen, isSpinning, checkCanPlay]);
 
-  const handleSpin = () => {
+  const handleSpin = async () => {
     if (isSpinning || !canPlay) return;
 
     const pool = activePrizes.length > 0 ? activePrizes : FALLBACK_COUPONS;
@@ -136,12 +119,22 @@ export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachine
     setResultMessage(null);
     setLeverPulled(true);
 
-    const now = Date.now().toString();
-    localStorage.setItem(getAccountSlotKey(), now);
-    localStorage.setItem('setmystay_last_spun_timestamp', now);
-
-    const winProbability = 0.5; // 50% chance to win for smooth demoing
-    const didWin = isLuckySpin || Math.random() < winProbability;
+    // The server decides the result and starts the wait
+    let didWin = false;
+    let nearMiss = false;
+    try {
+      const { data } = await api.post('/slot-machine/');
+      didWin = !!data?.win;
+      nearMiss = !!data?.near_miss;
+      setNextSpinAt(data?.next_spin_at ? new Date(data.next_spin_at).getTime() : null);
+    } catch (e: any) {
+      const next = e?.response?.data?.next_spin_at;
+      if (next) setNextSpinAt(new Date(next).getTime());
+      setIsSpinning(false);
+      setLeverPulled(false);
+      setResultMessage(e?.response?.status === 429 ? "You've already played. Come back when the timer ends!" : "Couldn't reach the server. Please try again.");
+      return;
+    }
 
     let finalReels: number[];
     let nextMessage: string | null = null;
@@ -149,7 +142,6 @@ export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachine
     if (didWin) {
       const winningSymbolIndex = Math.floor(Math.random() * reelSymbols.length);
       finalReels = [winningSymbolIndex, winningSymbolIndex, winningSymbolIndex];
-      localStorage.removeItem('setmystay_slot_lucky_spin');
       setIsLuckySpin(false);
     } else {
       finalReels = [
@@ -157,19 +149,13 @@ export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachine
         Math.floor(Math.random() * reelSymbols.length),
         Math.floor(Math.random() * reelSymbols.length),
       ];
-      while (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]) {
-        finalReels[1] = (finalReels[1] + 1) % reelSymbols.length;
-      }
-
-      const counts = finalReels.reduce((acc, val) => {
-        acc[val] = (acc[val] || 0) + 1;
-        return acc;
-      }, {} as Record<number, number>);
-
-      if (Object.values(counts).includes(2)) {
-        localStorage.setItem('setmystay_slot_lucky_spin', 'true');
+      if (nearMiss) {
+        // two matching symbols: the server gives a Lucky Spin next time
+        finalReels[1] = finalReels[0];
+        finalReels[2] = (finalReels[0] + 1) % reelSymbols.length;
         nextMessage = "So close! You've earned a Lucky Spin for next time!";
       } else {
+        finalReels = [0, 1, 2].sort(() => Math.random() - 0.5);
         nextMessage = "Better luck next time!";
       }
     }
@@ -202,6 +188,7 @@ export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachine
   const getDescription = () => {
     if (winner) return "Congratulations! You've won a prize!";
     if (!isSpinning && resultMessage) return null;
+    if (!statusLoaded) return "Getting your spin ready...";
     if (!canPlay) return `You can play again in: ${cooldownTime}`;
     if (isLuckySpin) return "You have a Lucky Spin! Good luck!";
     return "Pull the lever to win a discount coupon!";
@@ -272,7 +259,7 @@ export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachine
             </div>
           ) : (
             <Button size="lg" onClick={handleSpin} disabled={isSpinning || !canPlay} className="w-full mt-4">
-              {isSpinning ? "Spinning..." : !canPlay ? "On Cooldown" : isLuckySpin ? "Use Lucky Spin!" : "Pull Lever to Spin!"}
+              {isSpinning ? "Spinning..." : !statusLoaded ? "Checking..." : !canPlay ? "On Cooldown" : isLuckySpin ? "Use Lucky Spin!" : "Pull Lever to Spin!"}
             </Button>
           )}
         </div>

@@ -83,22 +83,7 @@ export function ListPropertyPaymentModal({
           description: 'Property Listing Fee',
           order_id: data.order_id,
           handler: async function (response: any) {
-            toast({
-              title: "Payment Successful!",
-              description: "Submitting your listing for approval...",
-              variant: "default",
-            });
-
-            // 1. Submit the property listing to the backend
-            if (onProceedToPayment) {
-              try {
-                await onProceedToPayment({ title: 'Property Listing Fee', price: validAmount });
-              } catch (err) {
-                console.error("Error in onProceedToPayment:", err);
-              }
-            }
-
-            // 2. Verify payment & record in Purchase History on backend
+            // 1. Confirm the payment with our server first (records the listing fee)
             try {
               const uEmail = (typeof window !== 'undefined' ? (localStorage.getItem('user_email') || userEmail) : userEmail) || '';
               const uName = (typeof window !== 'undefined' ? (localStorage.getItem('user_name') || userName) : userName) || '';
@@ -113,10 +98,17 @@ export function ListPropertyPaymentModal({
                 user_name: uName,
               });
             } catch (e) {
-              console.warn("Verification warning:", e);
+              console.warn("Payment confirmation failed:", e);
+              setIsProcessing(false);
+              toast({
+                title: "Payment not confirmed yet",
+                description: `We couldn't confirm your payment. Please contact us with payment ID ${response.razorpay_payment_id || ''} and we'll sort it out.`,
+                variant: "destructive",
+              });
+              return;
             }
 
-            // 3. Save to localStorage purchase history
+            // 2. Keep it in this browser's purchase history
             try {
               const existing = JSON.parse(localStorage.getItem('setmystay_purchase_history') || '[]');
               const newPurchase = {
@@ -132,12 +124,14 @@ export function ListPropertyPaymentModal({
               console.error(e);
             }
 
-            toast({
-              title: "Listing Submitted!",
-              description: "Your property has been submitted for admin approval.",
-            });
+            // 3. Now submit the listing, linked to this payment (the page shows the result)
             setIsProcessing(false);
-            navigate({ to: "/" });
+            if (onProceedToPayment) {
+              await onProceedToPayment({ title: 'Property Listing Fee', price: validAmount, paymentId: response.razorpay_payment_id });
+            } else {
+              toast({ title: "Payment Successful!", description: "Your listing fee is paid." });
+              navigate({ to: "/" });
+            }
           },
           prefill: {
             name: (typeof window !== 'undefined' && localStorage.getItem('user_name')) || userName,
