@@ -225,11 +225,14 @@ function FeaturedRail<T extends { id: string }>({ title, items, render, onAll }:
       </div>
       <div className="container flex snap-x snap-mandatory scroll-px-4 sm:scroll-px-6 lg:scroll-px-8 gap-6 overflow-x-auto pb-6 [scrollbar-width:none]">
         {items.map((it, i) => (
-          <motion.div key={it.id} initial={{ opacity: 0, x: 60 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-            transition={{ delay: Math.min(i, 5) * 0.08, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="w-[300px] shrink-0 snap-start sm:w-[340px] xl:w-[calc((100%-4.5rem)/4)]">
-            {render(it)}
-          </motion.div>
+          // The snap box stays still; only the inner card slides in (a sliding snap box made the row
+          // settle 60px off and cut the first card on phones).
+          <div key={it.id} className="w-[300px] shrink-0 snap-start sm:w-[340px] xl:w-[calc((100%-4.5rem)/4)]">
+            <motion.div initial={{ opacity: 0, x: 60 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
+              transition={{ delay: Math.min(i, 5) * 0.08, duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="h-full">
+              {render(it)}
+            </motion.div>
+          </div>
         ))}
       </div>
     </section>
