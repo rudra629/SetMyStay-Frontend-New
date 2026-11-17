@@ -223,7 +223,7 @@ function FeaturedRail<T extends { id: string }>({ title, items, render, onAll }:
         <Reveal><h2 className="font-display text-3xl sm:text-4xl font-semibold">{title}</h2></Reveal>
         <Button variant="link" onClick={onAll} className="text-base">View all <ArrowRight className="ml-1 h-4 w-4" /></Button>
       </div>
-      <div className="container flex snap-x snap-mandatory gap-6 overflow-x-auto pb-6 [scrollbar-width:none]">
+      <div className="container flex snap-x snap-mandatory scroll-px-4 sm:scroll-px-6 lg:scroll-px-8 gap-6 overflow-x-auto pb-6 [scrollbar-width:none]">
         {items.map((it, i) => (
           <motion.div key={it.id} initial={{ opacity: 0, x: 60 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
             transition={{ delay: Math.min(i, 5) * 0.08, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
