@@ -52,7 +52,7 @@ import { ListingsSection } from "@/components/sections/listings-section";
 
 import { PropertyDetails } from "@/components/modals/property-details";
 import { RoommateDetails } from "@/components/modals/roommate-details";
-import { UnlockDetailsModal } from "@/components/modals/unlock-details-modal";
+import { UnlockDetailsModal, PENDING_PURCHASE_KEY } from "@/components/modals/unlock-details-modal";
 import { ListPropertyPaymentModal } from "@/components/modals/list-property-payment-modal";
 import { feeFor, fetchAndCachePricing } from "@/lib/app-settings";
 import { WelcomeProfileModal } from "@/components/modals/welcome-profile-modal";
@@ -148,6 +148,7 @@ function Home() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authActionRequired, setAuthActionRequired] = useState<string | null>(null);
+  const [autoPurchase, setAutoPurchase] = useState<{ title: string; amount: number } | null>(null);
 
   const [adToShow, setAdToShow] = useState<Advertisement | null>(null);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
@@ -411,6 +412,21 @@ function Home() {
       }
     }
   }, [isClient]);
+
+  // A plan was chosen (with coupon) before signing in: after Google sign-in, go straight to Razorpay
+  useEffect(() => {
+    if (!isClient || !isLoggedIn) return;
+    let pending: { title?: string; amount?: number; at?: number } | null = null;
+    try { pending = JSON.parse(sessionStorage.getItem(PENDING_PURCHASE_KEY) || 'null'); } catch { pending = null; }
+    if (!pending) return;
+    sessionStorage.removeItem(PENDING_PURCHASE_KEY);
+    if (!pending.title || typeof pending.amount !== 'number' || Date.now() - (pending.at || 0) > 30 * 60 * 1000) return;
+    const t = setTimeout(() => {
+      setAutoPurchase({ title: pending!.title!, amount: pending!.amount! });
+      setUnlockModalOpen(true);
+    }, 1200); // let the user's current plan load first
+    return () => clearTimeout(t);
+  }, [isClient, isLoggedIn]);
 
   const saveUserData = useCallback(() => {
     if (isLoggingOutRef.current) return;
@@ -1060,6 +1076,10 @@ function Home() {
           handleNavigationWithAuth('list');
         }}
         pricing={pricing}
+        planState={isLoggedIn ? { isUnlimited: !!unlocks.isUnlimited, unlimitedExpiresAt: unlocks.unlimitedExpiresAt ?? null, creditsLeft: unlocks.count || 0 } : undefined}
+        onRequireSignIn={() => setAuthActionRequired('buy a plan')}
+        autoPurchase={autoPurchase}
+        onAutoPurchaseHandled={() => setAutoPurchase(null)}
       />
       <ListPropertyPaymentModal
         isOpen={isListPaymentModalOpen}
@@ -1075,6 +1095,8 @@ function Home() {
         onClose={() => {
             setAuthModalOpen(false);
             setAuthActionRequired(null);
+            // Closed without signing in: forget the plan they were about to buy
+            if (!localStorage.getItem('access_token')) sessionStorage.removeItem(PENDING_PURCHASE_KEY);
         }}
         onLoginSuccess={handleLoginSuccess}
       />

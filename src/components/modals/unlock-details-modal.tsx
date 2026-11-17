@@ -18,9 +18,30 @@ interface UnlockDetailsModalProps {
   onPlanSelect: (plan: { plan: UnlockPlan, title: string, price: number }) => void;
   onNavigateToListProperty: () => void;
   pricing: PricingData | null;
+  /** What the signed-in user already has (to show it and block lower plans) */
+  planState?: { isUnlimited: boolean; unlimitedExpiresAt: string | null; creditsLeft: number };
+  /** Called when a signed-out visitor confirms a plan: open Google sign-in (the choice is saved) */
+  onRequireSignIn?: () => void;
+  /** After sign-in: continue straight to Razorpay with this plan and the amount after coupon */
+  autoPurchase?: { title: string; amount: number } | null;
+  onAutoPurchaseHandled?: () => void;
 }
 
-export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateToListProperty, pricing }: UnlockDetailsModalProps) {
+export const PENDING_PURCHASE_KEY = 'setmystay_pending_purchase';
+
+type Tier = 'unlimited' | 0 | 1 | 5 | 10;
+const tierOf = (ps?: UnlockDetailsModalProps['planState']): Tier => {
+  if (!ps) return 0;
+  if (ps.isUnlimited) return 'unlimited';
+  const left = ps.creditsLeft || 0;
+  return left >= 10 ? 10 : left >= 5 ? 5 : left >= 1 ? 1 : 0;
+};
+const fmtDate = (iso?: string | null) => {
+  if (!iso) return '';
+  try { return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return ''; }
+};
+
+export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateToListProperty, pricing, planState, onRequireSignIn, autoPurchase, onAutoPurchaseHandled }: UnlockDetailsModalProps) {
   const [processingPlan, setProcessingPlan] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -47,6 +68,36 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
     { title: 'Rental Listing', price: pricing?.listings.rental ?? 999, features: ['30-day listing', 'Premium support'], icon: <Crown className="w-5 h-5" />, type: 'Rental' },
   ];
 
+  // What the user already has, and whether each plan can be bought now
+  const tier = tierOf(planState);
+  const planStatus = (p: { plan: UnlockPlan }): { allowed: boolean; label?: string; upgrade?: boolean } => {
+    if (tier === 'unlimited') {
+      return p.plan === 'unlimited'
+        ? { allowed: false, label: `Active until ${fmtDate(planState?.unlimitedExpiresAt)}` }
+        : { allowed: false, label: 'Included in your Ultimate plan' };
+    }
+    if (typeof p.plan === 'number' && tier && p.plan < tier) {
+      return { allowed: false, label: `You have ${planState?.creditsLeft} unlocks left` };
+    }
+    return { allowed: true, upgrade: tier !== 0 && (p.plan === 'unlimited' || (typeof p.plan === 'number' && p.plan > tier)) };
+  };
+
+  // After Google sign-in: continue with the plan and coupon price chosen before signing in
+  useEffect(() => {
+    if (!isOpen || !autoPurchase) return;
+    const plan = unlockPlans.find((p) => p.title === autoPurchase.title);
+    onAutoPurchaseHandled?.();
+    if (!plan) return;
+    const st = planStatus(plan);
+    if (!st.allowed) {
+      toast({ title: "You already have a plan", description: st.label || "This plan isn't available right now." });
+      return;
+    }
+    setSelectedPlan(plan);
+    handleProceedToPayment(autoPurchase.amount, plan);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, autoPurchase]);
+
   // 1. User clicks a plan -> Open confirmation modal first
   const handleSelectPlan = (plan: any) => {
     setSelectedPlan(plan);
@@ -54,9 +105,20 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
   };
 
   // 2. User confirms in second modal -> Proceed to Razorpay
-  const handleProceedToPayment = async (finalAmount: number) => {
-    const currentPlan = selectedPlan;
+  const handleProceedToPayment = async (finalAmount: number, planOverride?: any) => {
+    const currentPlan = planOverride || selectedPlan;
     if (!currentPlan) return;
+
+    // Signed out: remember the plan and the price after coupon, open Google sign-in,
+    // then come straight back to Razorpay with the same amount.
+    if (typeof window !== 'undefined' && !localStorage.getItem('access_token')) {
+      try { sessionStorage.setItem(PENDING_PURCHASE_KEY, JSON.stringify({ title: currentPlan.title, amount: finalAmount, at: Date.now() })); } catch { /* ignore */ }
+      setIsConfirmModalOpen(false);
+      setSelectedPlan(null);
+      onClose(true);
+      onRequireSignIn?.();
+      return;
+    }
 
     // Close both modals immediately with proceedingToPayment=true so itemToUnlock is NOT re-opened behind Razorpay!
     setIsConfirmModalOpen(false);
@@ -170,6 +232,8 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
           }
         };
 
+        // Right after a sign-in reload the checkout script may still be loading
+        for (let i = 0; i < 40 && !(window as any).Razorpay; i++) await new Promise((r) => setTimeout(r, 150));
         const rzp = new (window as any).Razorpay(options);
         rzp.on('payment.failed', function (response: any) {
           toast({
@@ -187,9 +251,11 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
 
       } catch (error: any) {
         console.error("Payment Error", error);
-        const errorMsg = error.response?.status === 401 
-          ? "Please sign in before purchasing a plan." 
-          : "Could not initialize payment gateway. Check backend connection.";
+        const errorMsg = error.response?.status === 401
+          ? "Please sign in before purchasing a plan."
+          : error.response?.data?.error
+            ? String(error.response.data.error)
+            : "Could not start the payment. Please check your internet and try again.";
         
         toast({
           title: "Payment Failed",
@@ -232,9 +298,19 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
             <div className="flex-1 overflow-y-auto">
               <TabsContent value="unlock" className="mt-0">
                 <div className="p-4 md:p-8">
+                  {tier === 'unlimited' && (
+                    <div className="mb-5 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+                      <span className="font-semibold">You're on the Ultimate plan.</span> Unlimited unlocks until {fmtDate(planState?.unlimitedExpiresAt)}.
+                    </div>
+                  )}
+                  {typeof tier === 'number' && tier > 0 && (
+                    <div className="mb-5 rounded-xl border bg-muted/50 px-4 py-3 text-sm">
+                      You have <span className="font-semibold">{planState?.creditsLeft} unlocks</span> left. You can upgrade to a bigger plan anytime.
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                    {unlockPlans.map(p => (
-                      <Card key={p.title} className="flex flex-col border-primary/50 hover:shadow-lg transition-shadow">
+                    {unlockPlans.map(p => { const st = planStatus(p); const isActive = tier === 'unlimited' && p.plan === 'unlimited'; return (
+                      <Card key={p.title} className={`flex flex-col transition-shadow ${isActive ? 'border-2 border-primary shadow-lg' : st.allowed ? 'border-primary/50 hover:shadow-lg' : 'border-border opacity-70'}`}>
                         <CardHeader className="items-center text-center">
                           <div className="p-3 bg-primary/10 rounded-full mb-2 text-primary">{p.icon}</div>
                           <CardTitle>{p.title}</CardTitle>
@@ -253,17 +329,24 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
                             ))}
                           </ul>
                         </CardContent>
-                        <CardFooter>
-                          <Button 
-                            className="w-full" 
-                            disabled={processingPlan === p.title}
-                            onClick={() => handleSelectPlan(p)}
-                          >
-                            {processingPlan === p.title ? "Processing..." : "Choose Plan"}
-                          </Button>
+                        <CardFooter className="flex-col gap-2">
+                          {st.allowed ? (
+                            <Button 
+                              className="w-full" 
+                              disabled={processingPlan === p.title}
+                              onClick={() => handleSelectPlan(p)}
+                            >
+                              {processingPlan === p.title ? "Processing..." : st.upgrade ? "Upgrade" : "Choose Plan"}
+                            </Button>
+                          ) : (
+                            <Button className="w-full" variant={isActive ? "default" : "secondary"} disabled>
+                              {isActive ? <><Check className="mr-1.5 h-4 w-4" />Your current plan</> : "Not needed now"}
+                            </Button>
+                          )}
+                          {st.label && <p className="text-center text-xs text-muted-foreground">{st.label}</p>}
                         </CardFooter>
                       </Card>
-                    ))}
+                    ); })}
                   </div>
                 </div>
               </TabsContent>
