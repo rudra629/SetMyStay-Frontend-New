@@ -37,6 +37,7 @@ export const Route = createFileRoute("/")({
 });
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { scrollPageToTop } from "@/components/smooth-scroll";
 import { HomeStaticShell } from "@/components/sections/home-static-shell";
 import type { Listing, RoommateProfile, Page, ListingType, UnlockPlan, Bed, Advertisement, Coupon, Purchase, AnyListing, PricingData } from "@/lib/types";
 import { defaultPricing, dummyProperties, dummyRoommates } from "@/lib/data";
@@ -499,8 +500,7 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
-    (window as unknown as { __lenis?: { scrollTo: (t: number, o: object) => void } }).__lenis?.scrollTo(0, { immediate: true });
+    scrollPageToTop();
   }, [activePage]);
 
   const handleRateUsClose = (rated: boolean) => {

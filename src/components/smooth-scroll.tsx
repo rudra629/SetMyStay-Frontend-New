@@ -1,19 +1,60 @@
 import { useEffect } from "react";
 import { detectLowEnd, isTouch } from "@/lib/perf";
 
+type LenisLike = {
+  raf: (t: number) => void;
+  destroy: () => void;
+  resize: () => void;
+  scrollTo: (target: number, opts?: { immediate?: boolean; force?: boolean; lock?: boolean }) => void;
+};
+
+const getLenis = () => (window as unknown as { __lenis?: LenisLike }).__lenis;
+
+/**
+ * Jump to the top of the page (used when switching sections). Resets the browser AND the smooth-scroll
+ * engine together, and again after the new section has been drawn, so they can never disagree
+ * (that disagreement froze the page until you scrolled a few times).
+ */
+export function scrollPageToTop() {
+  if (typeof window === "undefined") return;
+  const reset = () => {
+    const lenis = getLenis();
+    lenis?.resize();
+    lenis?.scrollTo(0, { immediate: true, force: true });
+    window.scrollTo(0, 0);
+  };
+  reset();
+  requestAnimationFrame(() => requestAnimationFrame(reset));
+  setTimeout(reset, 400); // after the section's fade-in has settled
+}
+
 export function SmoothScroll() {
   useEffect(() => {
     // Native scrolling is smoother on touch screens and weak hardware.
     if (detectLowEnd() || isTouch()) return;
     let raf = 0;
-    let lenis: { raf: (t: number) => void; destroy: () => void } | null = null;
+    let lenis: LenisLike | null = null;
+    let cancelled = false;
     import("lenis").then(({ default: Lenis }) => {
-      lenis = new Lenis({ duration: 1.15, easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), prevent: (node: HTMLElement) => !!node.closest("[role=dialog],[data-radix-scroll-area-viewport],[data-lenis-prevent]") });
+      if (cancelled) return;
+      lenis = new Lenis({
+        // Follows the wheel closely (lerp) instead of a long fixed-time glide: still smooth and premium,
+        // but it never feels like the page is lagging behind your hand.
+        lerp: 0.12,
+        wheelMultiplier: 1,
+        smoothWheel: true,
+        prevent: (node: HTMLElement) => !!node.closest("[role=dialog],[data-radix-scroll-area-viewport],[data-lenis-prevent]"),
+      }) as unknown as LenisLike;
       (window as unknown as { __lenis?: unknown }).__lenis = lenis;
       const loop = (t: number) => { lenis?.raf(t); raf = requestAnimationFrame(loop); };
       raf = requestAnimationFrame(loop);
     });
-    return () => { cancelAnimationFrame(raf); lenis?.destroy(); (window as unknown as { __lenis?: unknown }).__lenis = undefined; };
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      lenis?.destroy();
+      (window as unknown as { __lenis?: unknown }).__lenis = undefined;
+    };
   }, []);
   return null;
 }

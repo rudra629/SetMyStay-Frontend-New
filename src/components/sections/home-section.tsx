@@ -75,13 +75,18 @@ export function HomeSection({
     const play = () => v.play().catch(() => { });
     play();
     document.addEventListener("touchstart", play, { once: true, passive: true });
-    return () => document.removeEventListener("touchstart", play);
+    // Pause the hero video while it's scrolled out of view (frees the browser for smooth scrolling)
+    const hero = heroRef.current;
+    const io = hero ? new IntersectionObserver(([e]) => { if (e.isIntersecting) play(); else v.pause(); }, { threshold: 0.01 }) : null;
+    if (hero && io) io.observe(hero);
+    return () => { document.removeEventListener("touchstart", play); io?.disconnect(); };
   }, []);
 
   return (
     <div>
       <section ref={heroRef} className="relative h-[90svh] min-h-[620px] overflow-hidden bg-ink">
         <motion.video
+          ref={videoRef}
           style={lite ? undefined : { scale: videoScale }}
           autoPlay
           loop
