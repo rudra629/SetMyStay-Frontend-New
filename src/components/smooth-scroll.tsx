@@ -24,8 +24,17 @@ export function scrollPageToTop() {
     window.scrollTo(0, 0);
   };
   reset();
-  requestAnimationFrame(() => requestAnimationFrame(reset));
-  setTimeout(reset, 400); // after the section's fade-in has settled
+  // Re-check once the new section is drawn, unless you've already started scrolling it
+  let userMoved = false;
+  const mark = () => { userMoved = true; };
+  const events = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
+  events.forEach((e) => window.addEventListener(e, mark, { once: true, passive: true }));
+  const later = () => { if (!userMoved) reset(); };
+  requestAnimationFrame(() => requestAnimationFrame(later));
+  setTimeout(() => {
+    later();
+    events.forEach((e) => window.removeEventListener(e, mark));
+  }, 400);
 }
 
 export function SmoothScroll() {
