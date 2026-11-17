@@ -333,17 +333,59 @@ interface AdFormDialogProps {
     onClose: () => void;
     onSave: (ad: Omit<Advertisement, 'id'>, file: File | null) => void;
     ad: Advertisement | null;
+    coupons: Coupon[];
 }
 
-const AdFormDialog = ({ isOpen, onClose, onSave, ad }: AdFormDialogProps) => {
+// Purchases grouped by plan ("Property Listing Fee × 17 · ₹25,442"), with the full list one tap away.
+const PlanSummary = ({ plans }: { plans: { plan: string; price: number | string }[] }) => {
+    const [showAll, setShowAll] = useState(false);
+    const groups = useMemo(() => {
+        const m = new Map<string, { count: number; total: number }>();
+        plans.forEach((p) => {
+            const g = m.get(p.plan) || { count: 0, total: 0 };
+            g.count += 1; g.total += Number(p.price) || 0;
+            m.set(p.plan, g);
+        });
+        return [...m.entries()].sort((a, b) => b[1].total - a[1].total);
+    }, [plans]);
+    return (
+        <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+                {groups.map(([name, g]) => (
+                    <span key={name} className="inline-flex items-center gap-1.5 rounded-full border bg-muted/60 px-2.5 py-1 text-xs font-medium">
+                        <span>{name}</span>
+                        {g.count > 1 && <span className="text-muted-foreground">× {g.count}</span>}
+                        <span className="font-semibold text-primary">₹{g.total.toLocaleString()}</span>
+                    </span>
+                ))}
+            </div>
+            {plans.length > groups.length && (
+                <button type="button" onClick={() => setShowAll((v) => !v)} className="text-xs font-medium text-primary hover:underline">
+                    {showAll ? 'Hide individual purchases' : `Show all ${plans.length} purchases`}
+                </button>
+            )}
+            {showAll && (
+                <div className="flex flex-wrap gap-1.5">
+                    {plans.map((p, i) => (
+                        <span key={i} className="rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">{p.plan} · ₹{p.price}</span>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const AdFormDialog = ({ isOpen, onClose, onSave, ad, coupons }: AdFormDialogProps) => {
     const { toast } = useToast();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isActive, setIsActive] = useState(false);
+    const [couponCodes, setCouponCodes] = useState<string[]>([]);
 
     useEffect(() => {
+        setCouponCodes(ad?.couponCodes || []);
         if (ad) {
             setTitle(ad.title);
             setDescription(ad.description);
@@ -377,7 +419,7 @@ const AdFormDialog = ({ isOpen, onClose, onSave, ad }: AdFormDialogProps) => {
             toast({ title: "Image required", description: "Please upload an image.", variant: "destructive" });
             return;
         }
-        onSave({ title, description, imageUrl: imagePreview, isActive }, imageFile);
+        onSave({ title, description, imageUrl: imagePreview, isActive, couponCodes }, imageFile);
     };
 
     return (
@@ -420,6 +462,31 @@ const AdFormDialog = ({ isOpen, onClose, onSave, ad }: AdFormDialogProps) => {
                             accept="image/*"
                             onChange={handleImageChange}
                         />
+                    </div>
+                    <div>
+                        <Label>Coupons to show (visitors can copy them)</Label>
+                        {coupons.length === 0 ? (
+                            <p className="mt-1 text-sm text-muted-foreground">No coupons yet. Create one under Management.</p>
+                        ) : (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {coupons.map((c) => {
+                                    const on = couponCodes.includes(c.code);
+                                    return (
+                                        <button
+                                            key={c.id}
+                                            type="button"
+                                            onClick={() => setCouponCodes(on ? couponCodes.filter((x) => x !== c.code) : [...couponCodes, c.code])}
+                                            className={cn("rounded-full border px-3 py-1 font-mono text-xs transition-colors",
+                                                on ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
+                                                !c.isActive && "opacity-60")}
+                                            title={c.isActive ? `${c.discountPercentage}% off` : "This coupon is turned off, so it won't show"}
+                                        >
+                                            {c.code} · {c.discountPercentage}%{!c.isActive && " (off)"}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center space-x-2">
                         <Switch id="ad-is-active" checked={isActive} onCheckedChange={setIsActive} />
@@ -1230,6 +1297,7 @@ function AdminDashboard() {
             formData.append('title', adData.title);
             formData.append('description', adData.description);
             formData.append('is_active', adData.isActive ? 'true' : 'false');
+            formData.append('coupon_codes', (adData.couponCodes || []).join(','));
             if (file) formData.append('image', file);
 
             if (editingAd) {
@@ -1822,46 +1890,52 @@ function AdminDashboard() {
                                 <CardDescription>Track all plan purchases, grouped by user, including lifetime expenditure.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>User</TableHead>
-                                                <TableHead>Email</TableHead>
-                                                <TableHead>Plans Bought</TableHead>
-                                                <TableHead className="text-right">Total Lifetime Spend</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
+                                {groupedPurchases.length === 0 ? (
+                                    <p className="py-8 text-center text-muted-foreground">No purchases recorded yet.</p>
+                                ) : (
+                                    <>
+                                        {/* Phones: one card per user */}
+                                        <div className="space-y-3 md:hidden">
                                             {groupedPurchases.map((user, idx) => (
-                                                <TableRow key={idx}>
-                                                    <TableCell className="font-medium">{user.name}</TableCell>
-                                                    <TableCell>{user.email}</TableCell>
-                                                    <TableCell>
-                                                        <div className="flex flex-wrap gap-2 py-1">
-                                                            {user.plans.map((p, i) => (
-                                                                <span key={i} className="inline-flex items-center gap-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 px-2.5 py-1 rounded-full border border-slate-300 shadow-xs">
-                                                                    <span>{p.plan}</span>
-                                                                    <span className="font-semibold text-primary">₹{p.price}</span>
-                                                                </span>
-                                                            ))}
+                                                <div key={idx} className="rounded-xl border p-4">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="min-w-0">
+                                                            <p className="font-semibold truncate">{user.name}</p>
+                                                            <p className="text-xs text-muted-foreground break-all">{user.email}</p>
                                                         </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-bold text-primary text-lg">
-                                                        ₹{user.totalSpend.toLocaleString()}
-                                                    </TableCell>
-                                                </TableRow>
+                                                        <p className="shrink-0 text-lg font-bold text-primary">₹{user.totalSpend.toLocaleString()}</p>
+                                                    </div>
+                                                    <div className="mt-3"><PlanSummary plans={user.plans} /></div>
+                                                </div>
                                             ))}
-                                            {groupedPurchases.length === 0 && (
-                                                <TableRow>
-                                                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                                                        No purchases recorded yet.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
+                                        </div>
+                                        {/* Larger screens: table */}
+                                        <div className="hidden md:block overflow-x-auto">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>User</TableHead>
+                                                        <TableHead>Email</TableHead>
+                                                        <TableHead>Plans Bought</TableHead>
+                                                        <TableHead className="text-right">Total Lifetime Spend</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {groupedPurchases.map((user, idx) => (
+                                                        <TableRow key={idx}>
+                                                            <TableCell className="font-medium align-top">{user.name}</TableCell>
+                                                            <TableCell className="align-top">{user.email}</TableCell>
+                                                            <TableCell className="align-top"><PlanSummary plans={user.plans} /></TableCell>
+                                                            <TableCell className="text-right font-bold text-primary text-lg align-top">
+                                                                ₹{user.totalSpend.toLocaleString()}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -1874,6 +1948,7 @@ function AdminDashboard() {
                 onClose={() => setAdFormModalOpen(false)}
                 onSave={handleSaveAd}
                 ad={editingAd}
+                coupons={coupons}
             />
 
             {/* Coupon Form Modal */}

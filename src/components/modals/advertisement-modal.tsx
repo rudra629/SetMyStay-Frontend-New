@@ -10,12 +10,20 @@ interface AdvertisementModalProps {
   title: string;
   description: string;
   imageUrl: string;
+  /** Active coupon codes picked for this ad in the admin panel */
+  couponCodes?: string[];
 }
 
-export function AdvertisementModal({ isOpen, onClose, title, description, imageUrl }: AdvertisementModalProps) {
-  const [copied, setCopied] = useState(false);
-  const code = description?.match(/code:?\s*([A-Z0-9]{4,})/i)?.[1];
-  const text = code ? description.replace(/\s*Use code:?\s*[A-Z0-9]+\.?/i, "") : description;
+export function AdvertisementModal({ isOpen, onClose, title, description, imageUrl, couponCodes = [] }: AdvertisementModalProps) {
+  const [copied, setCopied] = useState<string | null>(null);
+  const inText = description?.match(/code:?\s*([A-Z0-9]{4,})/i)?.[1];
+  const text = inText ? description.replace(/\s*Use code:?\s*[A-Z0-9]+\.?/i, "") : description;
+  const codes = Array.from(new Set([...couponCodes, ...(inText ? [inText] : [])]));
+  const copy = (code: string) => {
+    navigator.clipboard?.writeText(code).catch(() => {});
+    setCopied(code);
+    setTimeout(() => setCopied((c) => (c === code ? null : c)), 1800);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -37,18 +45,20 @@ export function AdvertisementModal({ isOpen, onClose, title, description, imageU
           <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Limited offer</p>
           <DialogTitle className="font-display text-3xl font-normal leading-tight">{title}</DialogTitle>
           <DialogDescription className="text-sm leading-relaxed">{text}</DialogDescription>
-          {code && (
+          {codes.map((code) => (
             <button
+              key={code}
               type="button"
-              onClick={() => { navigator.clipboard?.writeText(code); setCopied(true); }}
+              onClick={() => copy(code)}
+              aria-label={`Copy coupon ${code}`}
               className="flex w-full items-center justify-between rounded-xl border border-dashed px-4 py-3 font-mono text-sm tracking-widest hover:bg-secondary transition-colors"
             >
               {code}
               <span className="flex items-center gap-1.5 font-sans text-xs tracking-normal text-muted-foreground">
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}{copied ? "Copied" : "Copy"}
+                {copied === code ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}{copied === code ? "Copied" : "Copy"}
               </span>
             </button>
-          )}
+          ))}
           <Button onClick={onClose} variant="ghost" className="w-full text-muted-foreground">Maybe later</Button>
         </div>
       </DialogContent>

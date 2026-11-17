@@ -1104,6 +1104,7 @@ function Home() {
         title={adToShow?.title || ''}
         description={adToShow?.description || ''}
         imageUrl={adToShow?.imageUrl || ''}
+        couponCodes={(adToShow?.couponCodes || []).filter(code => activeCoupons.some(c => c.code === code && c.isActive))}
       />
       <PaymentConfirmationModal
         isOpen={isPaymentConfirmationOpen}

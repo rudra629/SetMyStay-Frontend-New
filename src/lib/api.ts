@@ -403,11 +403,6 @@ api.interceptors.response.use(
       }
     }
     
-    // Log if the user's token is valid, but they aren't an admin (403 Forbidden)
-    if (error.response && error.response.status === 403) {
-        console.error("403 Forbidden: The logged-in account does not have is_staff=True in Django.");
-    }
-
     return Promise.reject(error);
   }
 );
@@ -424,7 +419,11 @@ export const deleteCoupon = async (id: string) => await api.delete(`/coupons/${i
 // --- ADVERTISEMENT API ---
 export const getAdvertisements = async () => {
   const raw = await getAllPages('/advertisements/');
-  return raw.map((a: any) => ({ ...a, isActive: a.is_active }));
+  return raw.map((a: any) => ({
+    ...a,
+    isActive: a.is_active,
+    couponCodes: String(a.coupon_codes || '').split(',').map((c: string) => c.trim()).filter(Boolean),
+  }));
 };
 export const createAdvertisement = async (formData: FormData) => await api.post('/advertisements/', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const updateAdvertisement = async (id: string, formData: FormData) => await api.patch(`/advertisements/${id}/`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });

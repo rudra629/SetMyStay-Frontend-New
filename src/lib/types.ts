@@ -15,6 +15,7 @@ export interface Advertisement {
   description: string;
   imageUrl: string;
   isActive: boolean;
+  couponCodes?: string[];   // coupons shown on the pop-up with a Copy button
 }
 
 export interface Coupon {
