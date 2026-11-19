@@ -29,9 +29,9 @@ export const Route = createFileRoute("/list-property")({
   head: () => ({
     meta: [
       { title: "List Your Property — SetMyStay" },
-      { name: "description", content: "List your PG, rental or roommate requirement on SetMyStay and reach verified tenants." },
+      { name: "description", content: "List your PG or rental on SetMyStay and reach verified tenants." },
       { property: "og:title", content: "List Your Property — SetMyStay" },
-      { property: "og:description", content: "List your PG, rental or roommate requirement on SetMyStay and reach verified tenants." },
+      { property: "og:description", content: "List your PG or rental on SetMyStay and reach verified tenants." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

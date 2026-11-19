@@ -376,7 +376,8 @@ export function ListPropertySection({ onSubmit }: ListPropertySectionProps) {
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
             <h1 className="text-4xl font-bold tracking-tight">List Your Property</h1>
-            <p className="mt-4 text-lg text-muted-foreground">Reach thousands of potential tenants and roommates by listing your space on SetMyStay.</p>
+            <p className="mt-4 text-lg text-muted-foreground">Reach thousands of potential tenants by listing your PG or rental on SetMyStay.</p>
+            <p className="mt-3 text-sm text-muted-foreground">Looking for a roommate instead? <a href="/?page=list-roommate" className="font-medium text-primary underline underline-offset-4">List yourself as a roommate</a>.</p>
         </div>
         
         <Form {...form}>
@@ -395,7 +396,6 @@ export function ListPropertySection({ onSubmit }: ListPropertySectionProps) {
                       <SelectContent>
                         <SelectItem value="RENTAL">Rental (BHK/House)</SelectItem>
                         <SelectItem value="PG">PG / Co-living</SelectItem>
-                        <SelectItem value="ROOMMATE">Looking for Roommate</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormItem>

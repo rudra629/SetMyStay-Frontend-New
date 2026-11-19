@@ -13,13 +13,14 @@ import { Label } from "@/components/ui/label";
 import { PropertyCard } from "@/components/shared/property-card";
 import { RoommateCard } from "@/components/shared/roommate-card";
 import { RoommateBackdrop } from "@/components/shared/roommate-backdrop";
+import { roommateCompletion } from "@/lib/roommate-form";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AutocompleteInput } from '@/components/shared/autocomplete-input';
 import { SearchableSelect } from '@/components/shared/searchable-select';
 import { indianStates } from '@/lib/states';
 import { allIndianCities, indianCitiesByState, City } from '@/lib/cities';
 import { indianAreas } from '@/lib/areas';
-import { Heart, Filter, LayoutGrid, List, Bell, Layers } from 'lucide-react';
+import { Heart, Filter, LayoutGrid, List, Bell, Layers, Pencil } from 'lucide-react';
 import { SwipeDeck } from '@/components/shared/swipe-deck';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -50,6 +51,8 @@ interface ListingsSectionProps {
   initialSearchFilters: Partial<FilterState> | null;
   /** My Properties: show each listing's review status and its listing ID under the card */
   showOwnerStatus?: boolean;
+  /** My Properties: edit button on each of the user's own listings */
+  onEditItem?: (item: Listing | RoommateProfile) => void;
   likedItemIds: Set<string>;
   onToggleLike: (itemId: string) => void;
   unlockedIds: Set<string>;
@@ -272,13 +275,29 @@ const STATUS_STYLE: Record<string, { label: string; className: string; hint: str
   rejected: { label: 'Rejected', className: 'bg-red-100 text-red-800 border-red-200', hint: 'Not approved. Call us with your listing ID to know why.' },
 };
 
-function OwnerStatusBar({ id, status }: { id: string; status?: string }) {
+function OwnerStatusBar({ id, status, item, onEdit }: { id: string; status?: string; item?: any; onEdit?: () => void }) {
   const st = STATUS_STYLE[status || 'pending'] || STATUS_STYLE.pending;
   const code = listingCode(id);
   const [copied, setCopied] = useState(false);
+  const isRoommate = item?.propertyType === 'Roommate';
+  const pct = isRoommate ? roommateCompletion(item.roommateDetails || {}, {
+    rent: item.rent, city: item.city, locality: item.locality, phone_primary: item.contactPhonePrimary !== 'Hidden' ? item.contactPhonePrimary : '',
+    description: item.description, address: item.completeAddress,
+    photoCount: (item.images || []).filter((u: string) => u && !/placehold\.co/.test(u)).length,
+    hasAadhaar: !!item.aadhaarCardUrl, hasElectricity: !!item.electricityBillUrl,
+  }) : null;
   return (
-    <div className="flex items-center justify-between gap-2 rounded-xl border bg-card px-3 py-2 text-sm" title={st.hint}>
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card px-3 py-2 text-sm" title={st.hint}>
       <span className={cn('rounded-full border px-2.5 py-0.5 text-xs font-semibold', st.className)}>{st.label}</span>
+      {pct !== null && (
+        <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', pct >= 80 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : pct >= 50 ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300')}
+          title="How much of your roommate profile is filled in">{pct}% complete</span>
+      )}
+      {onEdit && (
+        <Button type="button" size="sm" variant="outline" className="h-7 px-2.5 text-xs" onClick={onEdit}>
+          <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+        </Button>
+      )}
       <button
         type="button"
         className="font-mono text-xs text-muted-foreground hover:text-foreground"
@@ -302,6 +321,7 @@ export function ListingsSection({
   pageTitle: customPageTitle,
   inquiries,
   showOwnerStatus = false,
+  onEditItem,
 }: ListingsSectionProps) {
   const [filters, setFilters] = useState<FilterState>({ ...initialFilters, ...initialSearchFilters });
   const [pageTitle, setPageTitle] = useState('');
@@ -485,7 +505,7 @@ export function ListingsSection({
               if (!showOwnerStatus) return card;
               return (
                 <div key={item.id} className="flex flex-col gap-2">
-                  <OwnerStatusBar id={item.id} status={(item as any).status} />
+                  <OwnerStatusBar id={item.id} status={(item as any).status} item={item} onEdit={onEditItem ? () => onEditItem(item) : undefined} />
                   {card}
                 </div>
               );

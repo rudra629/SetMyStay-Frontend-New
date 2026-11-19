@@ -1,6 +1,8 @@
 
 
-export type Page = 'home' | 'pg' | 'rentals' | 'roommates' | 'list' | 'for-sale' | 'my-properties' | 'liked-properties';
+export type Page = 'home' | 'pg' | 'rentals' | 'roommates' | 'list' | 'list-roommate' | 'for-sale' | 'my-properties' | 'liked-properties';
+
+export type ListingEditChange = { field: string; old: unknown; new: unknown };
 
 export type ListingType = 'pg' | 'rentals' | 'roommate';
 
@@ -54,6 +56,12 @@ export interface Listing {
   ownerId: string;
   brokerStatus: 'With Broker' | 'Without Broker';
   vendorNumber?: string;
+  /** Roommate questionnaire answers (roommate listings only) */
+  roommateDetails?: import('./roommate-form').RoommateDetails;
+  /** Admin / staff only: last time the owner edited the listing after approval */
+  editedAt?: string;
+  /** Admin / staff only: changes not yet cleared from Notifications */
+  pendingEdits?: { field: string; old: unknown; new: unknown }[];
   age?: number;
   sharingStatus?: string;
   aadhaarCardUrl?: string;
@@ -90,6 +98,12 @@ export interface RoommateProfile {
   views: number;
   ownerId: string;
   vendorNumber?: string;
+  /** Roommate questionnaire answers (roommate listings only) */
+  roommateDetails?: import('./roommate-form').RoommateDetails;
+  /** Admin / staff only: last time the owner edited the listing after approval */
+  editedAt?: string;
+  /** Admin / staff only: changes not yet cleared from Notifications */
+  pendingEdits?: { field: string; old: unknown; new: unknown }[];
   aadhaarCardUrl?: string;
   electricityBillUrl?: string;
   nocUrl?: string;

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, IndianRupee, User, Eye, Cake, ChevronLeft, ChevronRight, Lock, MessageSquare, Phone, Sparkles, CigaretteOff, Leaf, Drumstick, Utensils, PawPrint } from 'lucide-react';
 import { isVideoUrl, whatsappLink, cdnImage } from '@/lib/utils';
+import { RoommateAnswers } from '@/components/shared/roommate-answers';
 
 interface RoommateDetailsProps {
   profile: RoommateProfile | null;
@@ -202,6 +203,13 @@ export function RoommateDetails({ profile, onClose, isUnlocked, onUnlock, onChat
           </div>
         )}
         
+        {profile.roommateDetails?.answers && Object.keys(profile.roommateDetails.answers).length > 0 && (
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Living style</h3>
+            <RoommateAnswers details={profile.roommateDetails} />
+          </div>
+        )}
+
         <div>
           <h3 className="text-lg font-semibold mb-2">Contact Details</h3>
           <div className="p-4 border rounded-lg relative bg-card">

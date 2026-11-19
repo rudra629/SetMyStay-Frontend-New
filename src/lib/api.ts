@@ -100,6 +100,10 @@ const adaptPropertyToListing = (data: any): Listing => {
     lastAvailabilityCheck: data.created_at,
     submittedAt: data.created_at,
     status: data.status === 'APPROVED' ? 'approved' : data.status === 'REJECTED' ? 'rejected' : 'pending',
+    roommateDetails: data.roommate_details && Object.keys(data.roommate_details).length ? data.roommate_details : undefined,
+    // Admin / staff responses only (the server never sends these to normal users)
+    editedAt: data.edited_at || undefined,
+    pendingEdits: Array.isArray(data.pending_edits) ? data.pending_edits : undefined,
   };
 };
 
@@ -138,6 +142,9 @@ export const listingToRoommateProfile = (listing: Listing): RoommateProfile => {
     hasProperty: isLookingForProperty ? false : true,
     status: listing.status as any,
     submittedAt: listing.submittedAt,
+    roommateDetails: listing.roommateDetails,
+    editedAt: listing.editedAt,
+    pendingEdits: listing.pendingEdits,
   };
 };
 

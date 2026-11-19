@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Link } from "@tanstack/react-router";
-import { Menu, X, Crown, User, Home, Users, Building, BedDouble, PlusCircle, Tag, Heart, LogOut, History, Briefcase, CheckCircle, ChevronDown } from "lucide-react";
+import { Menu, X, Crown, User, Home, Users, Building, BedDouble, PlusCircle, Tag, UserPlus, Heart, LogOut, History, Briefcase, CheckCircle, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -114,6 +114,7 @@ export function Header({
     { page: 'rentals' as Page, label: 'Rentals', icon: <Building className="w-5 h-5" /> },
     { page: 'roommates' as Page, label: 'Roommates', icon: <Users className="w-5 h-5" /> },
     { page: 'list' as Page, label: 'List Property', icon: <PlusCircle className="w-5 h-5" /> },
+    { page: 'list-roommate' as Page, label: 'List as Roommate', icon: <UserPlus className="w-5 h-5" /> },
     { page: 'for-sale' as Page, label: 'For Sale', icon: <Tag className="w-5 h-5" /> },
   ];
   

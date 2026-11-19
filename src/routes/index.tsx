@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 // Public address of the site, used for link previews. Set VITE_SITE_URL on Vercel when a custom domain is added.
 const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") || "https://set-my-stay-frontend-new.vercel.app";
 
-const URL_PAGES: Page[] = ['pg', 'rentals', 'roommates', 'for-sale', 'my-properties', 'liked-properties'];
+const URL_PAGES: Page[] = ['pg', 'rentals', 'roommates', 'list-roommate', 'for-sale', 'my-properties', 'liked-properties'];
 function pageFromUrl(): Page {
   if (typeof window === 'undefined') return 'home';
   const p = new URLSearchParams(window.location.search).get('page') as Page | null;
@@ -53,6 +53,8 @@ import { ListingsSection } from "@/components/sections/listings-section";
 import { PropertyDetails } from "@/components/modals/property-details";
 import { RoommateDetails } from "@/components/modals/roommate-details";
 import { ForSaleSection } from "@/components/sections/for-sale-section";
+import { ListRoommateSection } from "@/components/sections/list-roommate-section";
+import { EditListingDialog } from "@/components/modals/edit-listing-dialog";
 import { UnlockDetailsModal, PENDING_PURCHASE_KEY } from "@/components/modals/unlock-details-modal";
 import { ListPropertyPaymentModal } from "@/components/modals/list-property-payment-modal";
 import { feeFor, fetchAndCachePricing } from "@/lib/app-settings";
@@ -150,6 +152,9 @@ function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authActionRequired, setAuthActionRequired] = useState<string | null>(null);
   const [autoPurchase, setAutoPurchase] = useState<{ title: string; amount: number } | null>(null);
+  // My Properties > Edit: roommate profiles open the roommate form, PG / rentals open the edit dialog
+  const [editingRoommateId, setEditingRoommateId] = useState<string | null>(null);
+  const [editingListingId, setEditingListingId] = useState<string | null>(null);
 
   const [adToShow, setAdToShow] = useState<Advertisement | null>(null);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
@@ -472,6 +477,9 @@ function Home() {
       if (authActionRequired === 'list your property') {
         sessionStorage.setItem('setmystay_intended_page', 'list');
       }
+      if (authActionRequired === 'list yourself as a roommate') {
+        sessionStorage.setItem('setmystay_intended_page', 'list-roommate');
+      }
     }
   }, [authActionRequired, toast]);
 
@@ -480,6 +488,16 @@ function Home() {
     const newlyLikedItems = allAvailableItems.filter(item => likedItemIds.has(item.id));
     setLikedItems(newlyLikedItems);
   }, [likedItemIds, allListings, allRoommates]);
+
+  // "Edit my profile" on the List as Roommate page
+  useEffect(() => {
+    const onEdit = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (id) { setEditingRoommateId(String(id)); setActivePage('list-roommate'); }
+    };
+    window.addEventListener('setmystay:edit-roommate', onEdit);
+    return () => window.removeEventListener('setmystay:edit-roommate', onEdit);
+  }, []);
 
   const handleNavigate = (page: Page) => {
     setActivePage(page);
@@ -501,8 +519,13 @@ function Home() {
   const poppingRef = useRef(false);
   useEffect(() => {
     if (!isClient) return;
-    const needsLogin = activePage === 'my-properties' || activePage === 'liked-properties';
-    if (needsLogin && !localStorage.getItem('access_token')) { setActivePage('home'); return; }
+    const needsLogin = activePage === 'my-properties' || activePage === 'liked-properties' || activePage === 'list-roommate';
+    if (activePage !== 'list-roommate' && editingRoommateId) setEditingRoommateId(null);
+    if (needsLogin && !localStorage.getItem('access_token')) {
+      if (activePage === 'list-roommate') setAuthActionRequired('list yourself as a roommate');
+      setActivePage('home');
+      return;
+    }
     const want = urlForPage(activePage);
     const have = window.location.pathname + window.location.search;
     if (poppingRef.current) { poppingRef.current = false; return; }
@@ -853,6 +876,11 @@ function Home() {
       window.location.href = '/list-property';
       return;
     }
+    if (intendedPage === 'list-roommate') {
+      sessionStorage.removeItem('setmystay_intended_page');
+      window.location.href = '/?page=list-roommate';
+      return;
+    }
     window.location.reload();
   };
 
@@ -909,6 +937,10 @@ function Home() {
           if (!isLoggedIn) { setAuthActionRequired('list your property'); return; }
           window.location.href = '/list-property'; 
           return;
+      }
+      if (page === 'list-roommate') {
+          if (!isLoggedIn) { setAuthActionRequired('list yourself as a roommate'); return; }
+          setEditingRoommateId(null);
       }
       handleNavigate(page);
   };
@@ -987,6 +1019,17 @@ function Home() {
           />
         )}
         {activePage === 'for-sale' && <ForSaleSection />}
+        {activePage === 'list-roommate' && isLoggedIn && (
+          <ListRoommateSection
+            key={editingRoommateId || 'new'}
+            editId={editingRoommateId}
+            onDone={(what) => {
+              setEditingRoommateId(null);
+              if (what !== 'cancel') syncUserListsFromServer();
+              handleNavigate('my-properties');
+            }}
+          />
+        )}
         {isLoading && (['pg', 'rentals', 'roommates', 'my-properties', 'liked-properties'].includes(activePage)) && (
           <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-muted-foreground">
             <LoadingSpinner className="h-10 w-10 text-primary" />
@@ -1009,6 +1052,14 @@ function Home() {
                 undefined
               }
               showOwnerStatus={activePage === 'my-properties'}
+              onEditItem={activePage === 'my-properties' ? (item) => {
+                if ((item.propertyType as string)?.toLowerCase() === 'roommate') {
+                  setEditingRoommateId(String(item.id));
+                  handleNavigate('list-roommate');
+                } else {
+                  setEditingListingId(String(item.id));
+                }
+              } : undefined}
             />
         )}
       </main>
@@ -1083,6 +1134,12 @@ function Home() {
         autoPurchase={autoPurchase}
         onAutoPurchaseHandled={() => setAutoPurchase(null)}
       />
+      <EditListingDialog
+        open={!!editingListingId}
+        listingId={editingListingId}
+        onClose={() => setEditingListingId(null)}
+        onSaved={() => { setEditingListingId(null); syncUserListsFromServer(); }}
+      />
       <ListPropertyPaymentModal
         isOpen={isListPaymentModalOpen}
         onClose={() => setListPaymentModalOpen(false)}
@@ -1097,8 +1154,11 @@ function Home() {
         onClose={() => {
             setAuthModalOpen(false);
             setAuthActionRequired(null);
-            // Closed without signing in: forget the plan they were about to buy
-            if (!localStorage.getItem('access_token')) sessionStorage.removeItem(PENDING_PURCHASE_KEY);
+            // Closed without signing in: forget the plan they were about to buy / the page they wanted
+            if (!localStorage.getItem('access_token')) {
+              sessionStorage.removeItem(PENDING_PURCHASE_KEY);
+              sessionStorage.removeItem('setmystay_intended_page');
+            }
         }}
         onLoginSuccess={handleLoginSuccess}
       />

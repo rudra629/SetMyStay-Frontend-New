@@ -29,12 +29,15 @@ import { LoadingSpinner } from '@/components/icons';
 import { format } from 'date-fns';
 import { UserProfilesTable } from '@/components/admin/user-profiles-table';
 import { VendorsPanel } from '@/components/admin/vendors-panel';
+import { EditedTag, ListingChanges, ChangedInline } from '@/components/admin/listing-changes';
+import { RoommateAnswers } from '@/components/shared/roommate-answers';
+import { NotificationsPanel, useEditNotificationCount, type EditNotification } from '@/components/admin/notifications-panel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Listing, RoommateProfile, AnyListing } from '@/lib/types';
 import { isVideoUrl, whatsappLink, listingCode, matchesListingCode } from '@/lib/utils';
 import { ListingIdLookup } from '@/components/admin/listing-id-lookup';
 
-import api, { getAdminProperties, updatePropertyStatus, updateRoommateStatus, deleteProperty, deleteRoommate, listingToRoommateProfile } from '@/lib/api';
+import api, { getAdminProperties, updatePropertyStatus, updateRoommateStatus, deleteProperty, deleteRoommate, listingToRoommateProfile, getPropertyById } from '@/lib/api';
 
 function StaffDashboard() {
     const navigate = useNavigate();
@@ -133,6 +136,20 @@ function StaffDashboard() {
         setCurrentItem(item);
         setCurrentMediaIndex(0);
         setDetailsModalOpen(true);
+    };
+
+    // Notifications: open the listing as it is now, with the owner's changes shown
+    const editCount = useEditNotificationCount(isAuthenticated);
+    const openFromNotification = async (n: EditNotification) => {
+        const fresh = await getPropertyById(n.property_id);
+        if (!fresh) {
+            toast({ title: 'Listing not found', description: 'It may have been deleted.' });
+            return;
+        }
+        const item: any = String(fresh.propertyType).toLowerCase() === 'roommate' ? listingToRoommateProfile(fresh) : fresh;
+        if (!item.pendingEdits || !item.pendingEdits.length) item.pendingEdits = n.changes;
+        if (!item.editedAt) item.editedAt = n.created_at;
+        handleViewDetails(item as AnyListing);
     };
     
     const handleUpdateStatus = async (id: string, type: 'PG' | 'Rental' | 'Roommate', status: 'approved' | 'rejected') => {
@@ -271,6 +288,7 @@ function StaffDashboard() {
                     <div className="overflow-x-auto">
                         <TabsList className="mb-8 whitespace-nowrap">
                             <TabsTrigger value="pending">Pending</TabsTrigger>
+                            <TabsTrigger value="notifications">Notifications{editCount > 0 && <span className="ml-1.5 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">{editCount}</span>}</TabsTrigger>
                             <TabsTrigger value="approved">Approved</TabsTrigger>
                             <TabsTrigger value="rejected">Rejected</TabsTrigger>
                             <TabsTrigger value="vendors">Vendors</TabsTrigger>
@@ -278,6 +296,9 @@ function StaffDashboard() {
                         </TabsList>
                     </div>
 
+                    <TabsContent value="notifications">
+                        <NotificationsPanel onOpen={openFromNotification} />
+                    </TabsContent>
                     <TabsContent value="pending">
                         {renderListingsTable('pending')}
                     </TabsContent>
@@ -290,7 +311,7 @@ function StaffDashboard() {
                     <TabsContent value="vendors">
                         <VendorsPanel
                             onOpenListing={(id) => {
-                                const hit = properties.find((x: any) => String(x.id) === String(id));
+                                const hit = [...properties, ...roommates].find((x: any) => String(x.id) === String(id));
                                 if (hit) handleViewDetails(hit as AnyListing);
                             }}
                         />
@@ -307,9 +328,11 @@ function StaffDashboard() {
                     <DialogHeader>
                         <DialogTitle>{currentItem && ('title' in currentItem ? currentItem.title : currentItem?.ownerName)}</DialogTitle>
                         {currentItem && <p className="font-mono text-xs text-muted-foreground">Listing ID: <span className="font-semibold text-foreground">{listingCode(currentItem.id)}</span></p>}
+                        {currentItem && (currentItem as any).editedAt && <div><EditedTag editedAt={(currentItem as any).editedAt} /></div>}
                     </DialogHeader>
                     {currentItem && (
                         <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
+                            <ListingChanges changes={(currentItem as any).pendingEdits} />
                              {Array.isArray(currentItem.images) && currentItem.images.length > 0 && (
                                 <div className="relative w-full h-64 bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center">
                                      {isVideoUrl(currentItem.images[currentMediaIndex]) ? (
@@ -412,7 +435,7 @@ function StaffDashboard() {
                                 )}
                                 <div className="p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground">Locality</strong>
-                                    <div>{currentItem.locality}</div>
+                                    <div><ChangedInline changes={(currentItem as any).pendingEdits} field="area">{currentItem.locality}</ChangedInline></div>
                                 </div>
                                 <div className="p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground">Status</strong>
@@ -421,21 +444,28 @@ function StaffDashboard() {
 
                                 <div className="p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground flex items-center gap-1.5"><UserIcon className="w-4 h-4" /> Owner/User Name</strong>
-                                    <div>{currentItem.ownerName}</div>
+                                    <div><ChangedInline changes={(currentItem as any).pendingEdits} field="owner_name">{currentItem.ownerName}</ChangedInline></div>
                                 </div>
                                 <div className="p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground flex items-center gap-1.5"><Phone className="w-4 h-4" /> Phone Number</strong>
-                                    <div>{currentItem.contactPhonePrimary !== 'Hidden' ? currentItem.contactPhonePrimary : 'Not Provided'}</div>
+                                    <div><ChangedInline changes={(currentItem as any).pendingEdits} field="phone_primary">{currentItem.contactPhonePrimary !== 'Hidden' ? currentItem.contactPhonePrimary : 'Not Provided'}</ChangedInline></div>
                                 </div>
                                 <div className="md:col-span-2 p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Full Address</strong>
-                                    <div>{currentItem.completeAddress}</div>
+                                    <div><ChangedInline changes={(currentItem as any).pendingEdits} field="address">{currentItem.completeAddress}</ChangedInline></div>
                                 </div>
 
                                 {('description' in currentItem && currentItem.description) && (
                                     <div className="md:col-span-2 p-3 bg-slate-50 rounded-md space-y-1">
                                         <strong className="block text-sm font-medium text-muted-foreground">Description</strong>
-                                        <div>{currentItem.description}</div>
+                                        <div><ChangedInline changes={(currentItem as any).pendingEdits} field="description">{currentItem.description}</ChangedInline></div>
+                                    </div>
+                                )}
+
+                                {(currentItem as any).roommateDetails && (
+                                    <div className="md:col-span-2 p-3 bg-slate-50 rounded-md space-y-3">
+                                        <strong className="block text-sm font-medium text-muted-foreground">Roommate questionnaire</strong>
+                                        <RoommateAnswers details={(currentItem as any).roommateDetails} showHidden />
                                     </div>
                                 )}
 

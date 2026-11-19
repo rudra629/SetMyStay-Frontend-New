@@ -25,7 +25,8 @@ import {
     getAdvertisements, createAdvertisement, updateAdvertisement, deleteAdvertisement,
     getStaff, createStaff, updateStaff, deleteStaff,
     getAllPurchasesAdmin, // 👈 Added the new API call
-    listingToRoommateProfile
+    listingToRoommateProfile,
+    getPropertyById
 } from '@/lib/api'; // Or '@/lib/apis' depending on your file name
 
 import { Button } from '@/components/ui/button';
@@ -56,6 +57,9 @@ import { ThemeCustomizer, DemoDataCard } from '@/components/admin/theme-customiz
 import { UserProfilesTable } from '@/components/admin/user-profiles-table';
 import { VendorsPanel } from '@/components/admin/vendors-panel';
 import { HeroAdsManager } from '@/components/admin/hero-ads-manager';
+import { EditedTag, ListingChanges, ChangedInline } from '@/components/admin/listing-changes';
+import { RoommateAnswers } from '@/components/shared/roommate-answers';
+import { NotificationsPanel, useEditNotificationCount, type EditNotification } from '@/components/admin/notifications-panel';
 import { loadSettings, saveSettings } from '@/lib/app-settings';
 
 // Default credentials sourced from environment variables with safe fallbacks
@@ -1208,6 +1212,20 @@ function AdminDashboard() {
         setDetailsModalOpen(true);
     };
 
+    // Notifications: open the listing as it is now, with the owner's changes shown
+    const editCount = useEditNotificationCount(isAuthenticated);
+    const openFromNotification = async (n: EditNotification) => {
+        const fresh = await getPropertyById(n.property_id);
+        if (!fresh) {
+            toast({ title: 'Listing not found', description: 'It may have been deleted.' });
+            return;
+        }
+        const item: any = String(fresh.propertyType).toLowerCase() === 'roommate' ? listingToRoommateProfile(fresh) : fresh;
+        if (!item.pendingEdits || !item.pendingEdits.length) item.pendingEdits = n.changes;
+        if (!item.editedAt) item.editedAt = n.created_at;
+        handleViewDetails(item as AnyListing);
+    };
+
     const handleUpdateStatus = async (id: string, type: 'PG' | 'Rental' | 'Roommate', status: 'approved' | 'rejected') => {
         try {
             const backendStatus = status === 'approved' ? 'APPROVED' : 'REJECTED';
@@ -1478,6 +1496,7 @@ function AdminDashboard() {
                         <TabsList className="mb-8 whitespace-nowrap">
                             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                             <TabsTrigger value="listings">Listings</TabsTrigger>
+                            <TabsTrigger value="notifications">Notifications{editCount > 0 && <span className="ml-1.5 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">{editCount}</span>}</TabsTrigger>
                             <TabsTrigger value="management">Management</TabsTrigger>
                             <TabsTrigger value="staff">Staff</TabsTrigger>
                             {/* 👇 New Purchases Tab 👇 */}
@@ -1571,6 +1590,9 @@ function AdminDashboard() {
                         </Card>
                     </TabsContent>
 
+                    <TabsContent value="notifications">
+                        <NotificationsPanel onOpen={openFromNotification} />
+                    </TabsContent>
                     <TabsContent value="listings">
                         <div className="mb-8">
                             <ListingIdLookup items={[...properties, ...roommates] as AnyListing[]} onOpen={handleViewDetails} />
@@ -1891,7 +1913,7 @@ function AdminDashboard() {
                         <VendorsPanel
                             canCreate
                             onOpenListing={(id) => {
-                                const hit = properties.find((x: any) => String(x.id) === String(id));
+                                const hit = [...properties, ...roommates].find((x: any) => String(x.id) === String(id));
                                 if (hit) handleViewDetails(hit as AnyListing);
                                 else toast({ title: 'Listing not loaded', description: 'Refresh the page and try again.' });
                             }}
@@ -2007,9 +2029,11 @@ function AdminDashboard() {
                     <DialogHeader>
                         <DialogTitle>{currentItem && ('title' in currentItem ? currentItem.title : currentItem?.ownerName)}</DialogTitle>
                         {currentItem && <p className="font-mono text-xs text-muted-foreground">Listing ID: <span className="font-semibold text-foreground">{listingCode(currentItem.id)}</span></p>}
+                        {currentItem && (currentItem as any).editedAt && <div><EditedTag editedAt={(currentItem as any).editedAt} /></div>}
                     </DialogHeader>
                     {currentItem && (
                         <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
+                            <ListingChanges changes={(currentItem as any).pendingEdits} />
                             {Array.isArray(currentItem.images) && currentItem.images.length > 0 && (
                                 <div className="relative w-full h-64 bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center">
                                     {isVideoUrl(currentItem.images[currentMediaIndex]) ? (
@@ -2111,7 +2135,7 @@ function AdminDashboard() {
                                 )}
                                 <div className="p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground">Locality</strong>
-                                    <div>{currentItem.locality}</div>
+                                    <div><ChangedInline changes={(currentItem as any).pendingEdits} field="area">{currentItem.locality}</ChangedInline></div>
                                 </div>
                                 <div className="p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground">Status</strong>
@@ -2120,26 +2144,33 @@ function AdminDashboard() {
 
                                 <div className="p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground flex items-center gap-1.5"><UserIcon className="w-4 h-4" /> Owner/User Name</strong>
-                                    <div>{currentItem.ownerName}</div>
+                                    <div><ChangedInline changes={(currentItem as any).pendingEdits} field="owner_name">{currentItem.ownerName}</ChangedInline></div>
                                 </div>
 
                                 <div className="p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground flex items-center gap-1.5"><Phone className="w-4 h-4" /> Phone Number</strong>
                                     <div className="font-medium text-primary">
-                                        {currentItem.contactPhonePrimary !== 'Hidden' && currentItem.contactPhonePrimary ? currentItem.contactPhonePrimary : 'Not Provided'}
+                                        <ChangedInline changes={(currentItem as any).pendingEdits} field="phone_primary">{currentItem.contactPhonePrimary !== 'Hidden' && currentItem.contactPhonePrimary ? currentItem.contactPhonePrimary : 'Not Provided'}</ChangedInline>
                                     </div>
                                 </div>
 
                                 <div className="md:col-span-2 p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Full Address</strong>
-                                    <div>{currentItem.completeAddress || currentItem.partialAddress || 'Not Provided'}</div>
+                                    <div><ChangedInline changes={(currentItem as any).pendingEdits} field="address">{currentItem.completeAddress || currentItem.partialAddress || 'Not Provided'}</ChangedInline></div>
                                 </div>
 
                                 {/* Description */}
                                 <div className="md:col-span-2 p-3 bg-slate-50 rounded-md space-y-1">
                                     <strong className="block text-sm font-medium text-muted-foreground">Description</strong>
-                                    <div>{('description' in currentItem && currentItem.description) ? currentItem.description : 'No description provided.'}</div>
+                                    <div><ChangedInline changes={(currentItem as any).pendingEdits} field="description">{('description' in currentItem && currentItem.description) ? currentItem.description : 'No description provided.'}</ChangedInline></div>
                                 </div>
+
+                                {(currentItem as any).roommateDetails && (
+                                    <div className="md:col-span-2 p-3 bg-slate-50 rounded-md space-y-3">
+                                        <strong className="block text-sm font-medium text-muted-foreground">Roommate questionnaire</strong>
+                                        <RoommateAnswers details={(currentItem as any).roommateDetails} showHidden />
+                                    </div>
+                                )}
 
                                 {/* NEW BULLETPROOF AMENITIES BLOCK */}
                                 {('amenities' in currentItem) && (
