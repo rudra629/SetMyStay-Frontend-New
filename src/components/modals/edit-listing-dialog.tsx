@@ -28,6 +28,21 @@ type Form = {
 
 const last10 = (v?: string) => String(v || "").replace(/\D/g, "").slice(-10);
 const isPlaceholder = (u: string) => /placehold\.co/.test(u);
+// Older listings saved "1BHK" / "Semi": match them to the dropdown values
+const normBhk = (v?: string) => {
+  const t = String(v || "").trim();
+  if (/^1\s*rk$/i.test(t)) return "1 RK";
+  const m = t.match(/^(\d)\s*\+?\s*bhk$/i);
+  if (!m) return t;
+  return Number(m[1]) >= 4 ? "4+ BHK" : `${m[1]} BHK`;
+};
+const normFurnishing = (v?: string) => {
+  const t = String(v || "").trim().toLowerCase();
+  if (t.startsWith("semi")) return "Semi-Furnished";
+  if (t.startsWith("un")) return "Unfurnished";
+  if (t.startsWith("furn") || t === "full" || t === "fully furnished") return "Furnished";
+  return v || "";
+};
 
 function Row({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
@@ -83,7 +98,7 @@ export function EditListingDialog({ listingId, open, onClose, onSaved }: { listi
         title: data.title || "", description: data.description || "", rent: data.rent ? String(data.rent) : "", sq_ft: data.sq_ft ? String(data.sq_ft) : "",
         state: data.state || "", city: data.city || "", area: data.area || "", address: data.address || "",
         owner_name: data.owner_name || "", phone_primary: last10(data.phone_primary), phone_secondary: last10(data.phone_secondary),
-        bhk: data.bhk || "", furnishing: data.furnishing || "", occupancy_type: data.occupancy_type || "",
+        bhk: normBhk(data.bhk), furnishing: normFurnishing(data.furnishing), occupancy_type: data.occupancy_type || "",
         is_broker: data.is_broker ? "With Broker" : "Without Broker",
         amenities: (data.amenities || []).map((a: any) => (typeof a === "string" ? a : a?.name)).filter(Boolean),
       });
