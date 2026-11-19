@@ -1064,7 +1064,7 @@ function Home() {
         )}
       </main>
 
-      <Footer onNavigate={handleNavigate} onOpenPolicy={handleOpenPolicy} />
+      <Footer onNavigate={(page) => { handleNavigationWithAuth(page); if (page !== 'list') scrollPageToTop(); }} onOpenPolicy={handleOpenPolicy} />
       <FloatingCta onGameClick={handleGameClick} />
       <ContactFab />
       

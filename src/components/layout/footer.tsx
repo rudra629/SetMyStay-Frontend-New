@@ -68,6 +68,12 @@ export function Footer({ onNavigate, onOpenPolicy }: FooterProps) {
             <h3 className="font-semibold text-ink-foreground mb-4">Quick Links</h3>
             <ul className="space-y-2 text-sm">
               <li><button onClick={() => onNavigate('home')} className="hover:text-ink-foreground text-left w-full transition-colors">Home</button></li>
+              <li><button onClick={() => onNavigate('pg')} className="hover:text-ink-foreground text-left w-full transition-colors">PG Listings</button></li>
+              <li><button onClick={() => onNavigate('rentals')} className="hover:text-ink-foreground text-left w-full transition-colors">Rentals</button></li>
+              <li><button onClick={() => onNavigate('roommates')} className="hover:text-ink-foreground text-left w-full transition-colors">Roommates</button></li>
+              <li><button onClick={() => onNavigate('list')} className="hover:text-ink-foreground text-left w-full transition-colors">List Property</button></li>
+              <li><button onClick={() => onNavigate('list-roommate')} className="hover:text-ink-foreground text-left w-full transition-colors">List as Roommate</button></li>
+              <li><button onClick={() => onNavigate('for-sale')} className="hover:text-ink-foreground text-left w-full transition-colors">For Sale</button></li>
               <li><a href="https://g.co/kgs/Mmk6x3N" target="_blank" rel="noopener noreferrer" className="hover:text-ink-foreground transition-colors">Visit Our Office</a></li>
               <li><Link to="/admin/login" className="hover:text-ink-foreground transition-colors">Admin Dashboard</Link></li>
               <li><Link to="/staff/login" className="hover:text-ink-foreground transition-colors">Staff Dashboard</Link></li>
