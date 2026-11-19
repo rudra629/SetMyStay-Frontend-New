@@ -47,6 +47,8 @@ function buildPayload(r: RoommateFormResult, edit: boolean): FormData {
   fd.append("phone_primary", f.phone_primary);
   fd.append("phone_secondary", f.phone_secondary || "");
   fd.append("roommate_details", JSON.stringify(d));
+  // Optional; on an edit an empty value clears it
+  if (f.vendor_number || edit) fd.append("vendor_number", f.vendor_number || "");
   fd.append("amenities_list", preferenceChips(d).join(","));
   if (!edit) fd.append("property_type", "ROOMMATE");
   r.newPhotos.forEach((file) => fd.append("uploaded_images", file));
@@ -104,7 +106,7 @@ export function ListRoommateSection({ editId, onDone }: { editId?: string | null
         fields: {
           rent: data.rent ? String(data.rent) : "", state: data.state || "", city: data.city || "", locality: data.area || "",
           address: rd.has_place === "has_place" ? data.address || "" : "",
-          phone_primary: last10(data.phone_primary), phone_secondary: last10(data.phone_secondary), description: data.description || "",
+          phone_primary: last10(data.phone_primary), phone_secondary: last10(data.phone_secondary), description: data.description || "", vendor_number: data.vendor_number || "",
         },
         media: {
           photos: imgs.filter((x: any) => !x.is_video && x.image_url && !isPlaceholder(x.image_url)).map((x: any) => ({ id: String(x.id), url: x.image_url })),

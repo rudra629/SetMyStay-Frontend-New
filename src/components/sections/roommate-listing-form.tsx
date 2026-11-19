@@ -21,6 +21,7 @@ import {
 export interface RoommateFields {
   rent: string; state: string; city: string; locality: string; address: string;
   phone_primary: string; phone_secondary: string; description: string;
+  vendor_number: string;
 }
 export interface ExistingMedia {
   photos: { id: string; url: string }[];
@@ -38,7 +39,7 @@ const DRAFT_KEY = "setmystay_roommate_draft";
 const MAX_PHOTOS = 8;
 const DOC_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
 
-const emptyFields: RoommateFields = { rent: "", state: "", city: "", locality: "", address: "", phone_primary: "", phone_secondary: "", description: "" };
+const emptyFields: RoommateFields = { rent: "", state: "", city: "", locality: "", address: "", phone_primary: "", phone_secondary: "", description: "", vendor_number: "" };
 
 function defaultDetails(): RoommateDetails {
   return {
@@ -240,6 +241,7 @@ export function RoommateListingForm({
     if (s === "contact") {
       if (!/^\d{10}$/.test(f.phone_primary)) return "Please enter a 10-digit phone number.";
       if (f.phone_secondary && !/^\d{10}$/.test(f.phone_secondary)) return "The second phone number must be 10 digits.";
+      if (f.vendor_number.trim().length > 50) return "The vendor number can be at most 50 characters.";
       return null;
     }
     if (s === "prompts") {
@@ -273,7 +275,7 @@ export function RoommateListingForm({
     const prompts = (d.prompts || []).filter((p) => p.a.trim()).map((p) => ({ q: p.q, a: p.a.trim().slice(0, 150) }));
     onSubmit({
       details: { ...d, first_name: d.first_name?.trim(), age: Number(d.age), prompts, medical_note: answers.medical === "no" ? "" : (d.medical_note || "").trim() },
-      fields: { ...f, locality: f.locality.trim(), address: f.address.trim(), description: f.description.trim() },
+      fields: { ...f, locality: f.locality.trim(), address: f.address.trim(), description: f.description.trim(), vendor_number: (f.vendor_number || "").trim() },
       newPhotos, removeImageIds: removeIds, docs,
     });
   };
@@ -474,6 +476,10 @@ export function RoommateListingForm({
                 <Input inputMode="numeric" value={f.phone_secondary} placeholder="Optional"
                   onChange={(e) => setField("phone_secondary", e.target.value.replace(/\D/g, "").slice(0, 10))} />
               </div>
+            </Field>
+            <Field label="Vendor number" hint="Only if our team gave you a vendor number. Leave it empty otherwise.">
+              <Input value={f.vendor_number} maxLength={50} placeholder="e.g. VN-1024" autoComplete="off"
+                onChange={(e) => setField("vendor_number", e.target.value)} />
             </Field>
           </div>
         )}
