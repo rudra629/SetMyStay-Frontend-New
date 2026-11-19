@@ -25,6 +25,8 @@ export interface Coupon {
     code: string;
     discountPercentage: number;
     isActive: boolean;
+    /** 'plans' = unlock plans only, 'listings' = listing fees only */
+    scope?: 'plans' | 'listings';
 }
 
 export interface Listing {

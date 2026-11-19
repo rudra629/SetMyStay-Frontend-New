@@ -53,7 +53,7 @@ export function SlotMachineModal({ isOpen, onClose, prizes, onWin }: SlotMachine
     if (isOpen) {
       getCoupons()
         .then((fetched) => {
-          const valid = fetched?.filter((c: Coupon) => c.isActive);
+          const valid = fetched?.filter((c: Coupon) => c.isActive && (c.scope || 'plans') === 'plans');
           if (valid && valid.length > 0) {
             setActivePrizes(valid);
           } else if (prizes && prizes.length > 0) {

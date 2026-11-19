@@ -513,28 +513,32 @@ interface CouponFormDialogProps {
     onClose: () => void;
     onSave: (coupon: Omit<Coupon, 'id'>) => void;
     coupon: Coupon | null;
+    defaultScope?: 'plans' | 'listings';
 }
 
-const CouponFormDialog = ({ isOpen, onClose, onSave, coupon }: CouponFormDialogProps) => {
+const CouponFormDialog = ({ isOpen, onClose, onSave, coupon, defaultScope = 'plans' }: CouponFormDialogProps) => {
     const [code, setCode] = useState('');
     const [discountPercentage, setDiscountPercentage] = useState(0);
     const [isActive, setIsActive] = useState(true);
+    const [scope, setScope] = useState<'plans' | 'listings'>('plans');
 
     useEffect(() => {
         if (coupon) {
             setCode(coupon.code);
             setDiscountPercentage(coupon.discountPercentage);
             setIsActive(coupon.isActive);
+            setScope(coupon.scope || 'plans');
         } else {
             setCode('');
             setDiscountPercentage(0);
             setIsActive(true);
+            setScope(defaultScope);
         }
-    }, [coupon, isOpen]);
+    }, [coupon, isOpen, defaultScope]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({ code: code.toUpperCase(), discountPercentage, isActive });
+        onSave({ code: code.toUpperCase(), discountPercentage, isActive, scope });
     };
 
     return (
@@ -550,7 +554,17 @@ const CouponFormDialog = ({ isOpen, onClose, onSave, coupon }: CouponFormDialogP
                     </div>
                     <div>
                         <Label htmlFor="coupon-discount">Discount Percentage (%)</Label>
-                        <Input id="coupon-discount" type="number" value={discountPercentage} onChange={(e) => setDiscountPercentage(parseInt(e.target.value, 10))} required />
+                        <Input id="coupon-discount" type="number" min={1} max={90} value={discountPercentage} onChange={(e) => setDiscountPercentage(parseInt(e.target.value, 10))} required />
+                    </div>
+                    <div>
+                        <Label>Use for</Label>
+                        <Select value={scope} onValueChange={(v) => setScope(v as 'plans' | 'listings')}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="plans">Unlock plans only</SelectItem>
+                                <SelectItem value="listings">Listing fees only (PG, rental, roommate)</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div className="flex items-center space-x-2">
                         <Switch id="coupon-is-active" checked={isActive} onCheckedChange={setIsActive} />
@@ -1345,8 +1359,10 @@ function AdminDashboard() {
         }
     };
 
-    const handleOpenCouponForm = (coupon: Coupon | null) => {
+    const [newCouponScope, setNewCouponScope] = useState<'plans' | 'listings'>('plans');
+    const handleOpenCouponForm = (coupon: Coupon | null, scope: 'plans' | 'listings' = 'plans') => {
         setEditingCoupon(coupon);
+        setNewCouponScope(coupon?.scope || scope);
         setCouponFormModalOpen(true);
     };
 
@@ -1765,14 +1781,17 @@ function AdminDashboard() {
                                 <Card>
                                     <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                         <div>
-                                            <CardTitle className="text-2xl">Coupon Code Management</CardTitle>
-                                            <CardDescription>Create and manage discount coupons.</CardDescription>
+                                            <CardTitle className="text-2xl">Plan Coupons</CardTitle>
+                                            <CardDescription>Discounts for unlock plans (Single, Value, Pro, Ultimate). They cannot be used for listing fees.</CardDescription>
                                         </div>
-                                        <Button onClick={() => handleOpenCouponForm(null)} className="w-full sm:w-auto">
+                                        <Button onClick={() => handleOpenCouponForm(null, 'plans')} className="w-full sm:w-auto">
                                             <PlusCircle className="mr-2 h-4 w-4" /> Add
                                         </Button>
                                     </CardHeader>
                                     <CardContent>
+                                        {coupons.filter(c => (c.scope || 'plans') === 'plans').length === 0 ? (
+                                            <p className="py-4 text-center text-sm text-muted-foreground">No coupons yet.</p>
+                                        ) : (
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
@@ -1780,7 +1799,7 @@ function AdminDashboard() {
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {coupons.map(coupon => (
+                                                {coupons.filter(c => (c.scope || 'plans') === 'plans').map(coupon => (
                                                     <TableRow key={coupon.id}>
                                                         <TableCell className="font-medium">{coupon.code}</TableCell>
                                                         <TableCell>{coupon.discountPercentage}%</TableCell>
@@ -1796,6 +1815,47 @@ function AdminDashboard() {
                                                 ))}
                                             </TableBody>
                                         </Table>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <div>
+                                            <CardTitle className="text-2xl">Listing Coupons</CardTitle>
+                                            <CardDescription>Discounts for listing fees (PG, rental, roommate). They cannot be used for unlock plans.</CardDescription>
+                                        </div>
+                                        <Button onClick={() => handleOpenCouponForm(null, 'listings')} className="w-full sm:w-auto">
+                                            <PlusCircle className="mr-2 h-4 w-4" /> Add
+                                        </Button>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {coupons.filter(c => (c.scope || 'plans') === 'listings').length === 0 ? (
+                                            <p className="py-4 text-center text-sm text-muted-foreground">No coupons yet.</p>
+                                        ) : (
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Code</TableHead><TableHead>Discount</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {coupons.filter(c => (c.scope || 'plans') === 'listings').map(coupon => (
+                                                    <TableRow key={coupon.id}>
+                                                        <TableCell className="font-medium">{coupon.code}</TableCell>
+                                                        <TableCell>{coupon.discountPercentage}%</TableCell>
+                                                        <TableCell><StatusBadge status={coupon.isActive} /></TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button variant="ghost" size="icon" onClick={() => handleOpenCouponForm(coupon)}><Edit className="h-4 w-4" /></Button>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete Coupon?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the coupon.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteCoupon(coupon.id)}>Confirm</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                        )}
                                     </CardContent>
                                 </Card>
                                 <Card>
@@ -1993,6 +2053,7 @@ function AdminDashboard() {
                 onClose={() => setCouponFormModalOpen(false)}
                 onSave={handleSaveCoupon}
                 coupon={editingCoupon}
+                defaultScope={newCouponScope}
             />
 
             {/* Staff Form Modal */}

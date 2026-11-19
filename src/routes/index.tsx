@@ -1124,9 +1124,9 @@ function Home() {
             }
         }}
         onPlanSelect={handlePlanSelect}
-        onNavigateToListProperty={() => {
+        onNavigateToListProperty={(kind) => {
           setUnlockModalOpen(false);
-          handleNavigationWithAuth('list');
+          handleNavigationWithAuth(kind === 'roommate' ? 'list-roommate' : 'list');
         }}
         pricing={pricing}
         planState={isLoggedIn ? { isUnlimited: !!unlocks.isUnlimited, unlimitedExpiresAt: unlocks.unlimitedExpiresAt ?? null, creditsLeft: unlocks.count || 0 } : undefined}
@@ -1145,6 +1145,7 @@ function Home() {
         onClose={() => setListPaymentModalOpen(false)}
         propertyId={pendingListingData?.id || ''}
         amount={feeFor(pendingListingData && 'propertyType' in pendingListingData ? pendingListingData.propertyType : 'ROOMMATE')}
+        listingType={pendingListingData && 'propertyType' in pendingListingData ? String(pendingListingData.propertyType) : 'ROOMMATE'}
         onProceedToPayment={handleListProperty}
         pricing={pricing}
       />

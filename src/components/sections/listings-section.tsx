@@ -488,9 +488,9 @@ export function ListingsSection({
             </div>
                       </div>
           {type === 'roommate' && filteredListings.length > 0 && (
-            <div className="relative lg:py-6">
+            <div className="relative py-2 sm:py-4 lg:py-6">
               <RoommateBackdrop />
-              <SwipeDeck items={filteredListings} likedItemIds={likedItemIds} onToggleLike={onToggleLike} onViewDetails={(i, t) => onViewDetails(i, t)} className="relative py-6" />
+              <SwipeDeck items={filteredListings} likedItemIds={likedItemIds} onToggleLike={onToggleLike} onViewDetails={(i, t) => onViewDetails(i, t)} className="relative px-3 py-6 sm:px-6" />
             </div>
           )}
           <div className={cn(

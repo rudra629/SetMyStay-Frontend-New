@@ -417,10 +417,10 @@ api.interceptors.response.use(
 // --- COUPON API ---
 export const getCoupons = async () => {
   const raw = await getAllPages('/coupons/');
-  return raw.map((c: any) => ({ ...c, discountPercentage: c.discount_percentage, isActive: c.is_active }));
+  return raw.map((c: any) => ({ ...c, discountPercentage: c.discount_percentage, isActive: c.is_active, scope: c.scope === 'listings' ? 'listings' : 'plans' }));
 };
-export const createCoupon = async (data: any) => await api.post('/coupons/', { code: data.code, discount_percentage: data.discountPercentage, is_active: data.isActive });
-export const updateCoupon = async (id: string, data: any) => await api.patch(`/coupons/${id}/`, { code: data.code, discount_percentage: data.discountPercentage, is_active: data.isActive });
+export const createCoupon = async (data: any) => await api.post('/coupons/', { code: data.code, discount_percentage: data.discountPercentage, is_active: data.isActive, scope: data.scope || 'plans' });
+export const updateCoupon = async (id: string, data: any) => await api.patch(`/coupons/${id}/`, { code: data.code, discount_percentage: data.discountPercentage, is_active: data.isActive, scope: data.scope || 'plans' });
 export const deleteCoupon = async (id: string) => await api.delete(`/coupons/${id}/`);
 
 // --- ADVERTISEMENT API ---

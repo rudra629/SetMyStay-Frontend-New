@@ -1,7 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import api from '@/lib/api';
+import React, { useEffect, useMemo, useState } from 'react';
+import api, { getCoupons } from '@/lib/api';
+import type { Coupon } from '@/lib/types';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { IndianRupee, Info, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -9,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from "@tanstack/react-router";
@@ -22,8 +28,12 @@ interface PaymentModalProps {
   userEmail?: string;
   userName?: string;
   pricing?: any;
+  /** Which listing is being paid for: sets the plan name and lets the server check the price */
+  listingType?: string;
   onProceedToPayment?: (plan?: any) => Promise<void> | void;
 }
+
+const LISTING_LABEL: Record<string, string> = { PG: 'PG / Co-living Listing', RENTAL: 'Rental Listing', ROOMMATE: 'Roommate Listing' };
 
 export function ListPropertyPaymentModal({ 
   isOpen, 
@@ -32,13 +42,44 @@ export function ListPropertyPaymentModal({
   amount = 499,
   userEmail = "owner@setmystay.com",
   userName = "Property Owner",
+  listingType,
   onProceedToPayment,
 }: PaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const validAmount = Number(amount) > 0 ? Number(amount) : 499;
+  const type = String(listingType || '').toUpperCase();
+  const planLabel = LISTING_LABEL[type] || 'Listing Fee';
+  const originalAmount = Number(amount) > 0 ? Number(amount) : 499;
+
+  // Listing-fee coupons only (unlock-plan coupons don't work here)
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    getCoupons().then((all: Coupon[]) => setCoupons(all.filter((c) => c.isActive && c.scope === 'listings'))).catch(() => {});
+  }, [isOpen]);
+  useEffect(() => { setAppliedCoupon(null); setCouponCode(''); }, [originalAmount, type]);
+
+  const validAmount = useMemo(() => {
+    if (!appliedCoupon) return originalAmount;
+    const pct = Math.min(Math.max(appliedCoupon.discountPercentage, 0), 90);
+    return Math.max(1, Math.round(originalAmount - originalAmount * (pct / 100)));
+  }, [originalAmount, appliedCoupon]);
+
+  const applyCoupon = () => {
+    const code = couponCode.trim().toUpperCase();
+    if (!code) return;
+    const c = coupons.find((x) => x.code.toUpperCase() === code);
+    if (c) {
+      setAppliedCoupon(c);
+      toast({ title: 'Coupon Applied!', description: `You've received a ${c.discountPercentage}% discount.` });
+    } else {
+      toast({ title: 'Invalid Coupon', description: 'This code is not valid for listing fees, or it has expired.', variant: 'destructive' });
+    }
+  };
 
   const handlePayment = async () => {
     setIsProcessing(true);
@@ -55,6 +96,7 @@ export function ListPropertyPaymentModal({
           amount: validAmount,
           property_id: propertyId || null,
           plan_name: 'Property Listing Fee',
+          listing_type: type ? type.toLowerCase() : undefined,
         });
 
         // Robust key resolution: checks backend keys (razorpay_key, key, key_id)
@@ -80,7 +122,7 @@ export function ListPropertyPaymentModal({
           amount: data.amount,
           currency: data.currency || 'INR',
           name: 'SetMyStay',
-          description: 'Property Listing Fee',
+          description: appliedCoupon ? `${planLabel} (coupon ${appliedCoupon.code})` : planLabel,
           order_id: data.order_id,
           handler: async function (response: any) {
             // 1. Confirm the payment with our server first (records the listing fee)
@@ -177,26 +219,66 @@ export function ListPropertyPaymentModal({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Complete Your Listing</DialogTitle>
-            <DialogDescription>
-              Pay the listing fee of ₹{validAmount} to publish your property on SetMyStay.
-            </DialogDescription>
+            <DialogTitle className="text-2xl text-center">Confirm Your Purchase</DialogTitle>
+            <DialogDescription className="text-center">Please review your order before proceeding.</DialogDescription>
           </DialogHeader>
-          
-          <div className="flex flex-col gap-4 py-4">
-            <div className="flex justify-between items-center bg-slate-50 p-4 rounded-lg">
-              <span className="font-medium text-slate-700">Total Amount</span>
-              <span className="font-bold text-lg">₹{validAmount}</span>
+          <div className="py-4 space-y-4">
+            <div className="border rounded-lg p-4 bg-muted/50 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Plan:</span>
+                <span className="font-semibold">{planLabel}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Original Price:</span>
+                <span className="font-semibold flex items-center"><IndianRupee className="w-4 h-4 mr-1" />{originalAmount}</span>
+              </div>
+              {appliedCoupon && (
+                <div className="flex justify-between items-center text-green-600">
+                  <span className="text-sm">Discount ({appliedCoupon.discountPercentage}%):</span>
+                  <span className="font-semibold flex items-center">- <IndianRupee className="w-3 h-3 mx-1" />{originalAmount - validAmount}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center text-lg border-t pt-2 mt-2">
+                <span className="text-muted-foreground">Total Amount:</span>
+                <span className="font-bold flex items-center"><IndianRupee className="w-4 h-4 mr-1" />{validAmount}</span>
+              </div>
             </div>
-            
-            <Button 
-              onClick={handlePayment} 
-              disabled={isProcessing}
-              className="w-full"
-            >
-              {isProcessing ? "Processing..." : `Pay ₹${validAmount} Now`}
-            </Button>
+
+            <div className="space-y-2">
+              <Label htmlFor="listing-coupon-code" className="text-sm">Have a coupon code?</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="listing-coupon-code"
+                  placeholder="Enter code"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } }}
+                  disabled={!!appliedCoupon}
+                />
+                {appliedCoupon ? (
+                  <Button variant="ghost" size="icon" aria-label="Remove coupon" onClick={() => { setAppliedCoupon(null); setCouponCode(''); }} className="text-destructive">
+                    <XCircle className="w-5 h-5" />
+                  </Button>
+                ) : (
+                  <Button onClick={applyCoupon} variant="secondary">Apply</Button>
+                )}
+              </div>
+            </div>
+
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Important: Listing Verification</AlertTitle>
+              <AlertDescription>
+                Your listing will be manually reviewed by our staff before it goes live. If it is rejected for any reason, your payment will be fully refunded within 3 working days.
+              </AlertDescription>
+            </Alert>
           </div>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancel</Button>
+            <Button onClick={handlePayment} disabled={isProcessing} className="w-full sm:w-auto">
+              {isProcessing ? 'Processing...' : `Pay ₹${validAmount}`}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

@@ -249,6 +249,7 @@ function ListPropertyPage() {
         onClose={() => setIsPaymentModalOpen(false)}
         onProceedToPayment={handlePaymentSuccess}
         amount={listingAmount}
+        listingType={formData?.property_type || formData?.propertyType || 'RENTAL'}
         userEmail={(typeof localStorage !== 'undefined' && localStorage.getItem('user_email')) || ''}
         userName={(typeof localStorage !== 'undefined' && localStorage.getItem('user_name')) || ''}
         pricing={null}

@@ -221,6 +221,7 @@ export function ListRoommateSection({ editId, onDone }: { editId?: string | null
           if (pending) await create(pending, plan?.paymentId);
         }}
         amount={fee}
+        listingType="ROOMMATE"
         userEmail={(typeof localStorage !== "undefined" && localStorage.getItem("user_email")) || ""}
         userName={(typeof localStorage !== "undefined" && localStorage.getItem("user_name")) || ""}
         pricing={null}

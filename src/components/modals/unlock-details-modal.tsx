@@ -16,7 +16,7 @@ interface UnlockDetailsModalProps {
   isOpen: boolean;
   onClose: (proceedingToPayment?: boolean) => void;
   onPlanSelect: (plan: { plan: UnlockPlan, title: string, price: number }) => void;
-  onNavigateToListProperty: () => void;
+  onNavigateToListProperty: (kind?: 'property' | 'roommate') => void;
   pricing: PricingData | null;
   /** What the signed-in user already has (to show it and block lower plans) */
   planState?: { isUnlimited: boolean; unlimitedExpiresAt: string | null; creditsLeft: number };
@@ -51,7 +51,7 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
   // Fetch active coupons when the modal opens
   useEffect(() => {
     if (isOpen) {
-      getCoupons().then(setAvailableCoupons).catch(console.error);
+      getCoupons().then((all: Coupon[]) => setAvailableCoupons(all.filter((c) => (c.scope || 'plans') === 'plans'))).catch(console.error);
     }
   }, [isOpen]);
 
@@ -375,7 +375,7 @@ export function UnlockDetailsModal({ isOpen, onClose, onPlanSelect, onNavigateTo
                           </ul>
                         </CardContent>
                         <CardFooter>
-                          <Button className="w-full" variant="secondary" onClick={onNavigateToListProperty}>
+                          <Button className="w-full" variant="secondary" onClick={() => onNavigateToListProperty(p.type === 'Roommate' ? 'roommate' : 'property')}>
                             List your {p.type}
                           </Button>
                         </CardFooter>
