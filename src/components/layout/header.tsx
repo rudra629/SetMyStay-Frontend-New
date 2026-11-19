@@ -44,7 +44,7 @@ const NavLink: React.FC<NavLinkProps> = ({ page, activePage, onClick, children, 
     <Button variant="ghost" aria-current={isActive ? "page" : undefined}
       onClick={() => onClick(page)}
       className={cn(
-        "relative rounded-lg px-4 py-2 text-sm font-medium transition-colors hover:bg-nav-selected/15 hover:text-inherit",
+        "relative rounded-lg px-2.5 xl:px-4 py-2 text-sm font-medium transition-colors hover:bg-nav-selected/15 hover:text-inherit",
         isActive ? "text-nav-selected-foreground" : "opacity-80 hover:opacity-100"
       )}
     >
@@ -166,7 +166,7 @@ export function Header({
             <span className="font-display text-xl md:text-2xl">SetMyStay</span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1">
           {navItems.map(item => (
             <NavLink key={item.page} page={item.page} activePage={activePage} onClick={setActivePage}>
               {item.label}
@@ -176,8 +176,8 @@ export function Header({
 
         <div className="flex items-center gap-2">
           {/* Desktop buttons */}
-          <div className="hidden lg:flex items-center gap-2">
-            <Button variant={overHero ? "glass" : "ghost"} size="sm" className="rounded-full h-10 px-4" onClick={onSubscriptionClick}>
+          <div className="hidden lg:flex items-center gap-1 xl:gap-2">
+            <Button variant={overHero ? "glass" : "ghost"} size="sm" className="rounded-full h-10 px-3 xl:px-4" onClick={onSubscriptionClick}>
               <Crown className="w-4 h-4 mr-2" />
               Pricing
             </Button>
