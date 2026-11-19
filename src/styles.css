@@ -270,3 +270,15 @@ html, body { overflow-x: clip; }
 .hero-video::-webkit-media-controls,
 .hero-video::-webkit-media-controls-start-playback-button,
 .hero-video::-webkit-media-controls-overlay-play-button { display: none !important; -webkit-appearance: none; }
+
+/* Roommates backdrop: gentle floating chips and drifting blobs (desktop only, decorative) */
+@keyframes sms-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes sms-drift { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(24px, -18px) scale(1.08); } }
+.sms-float { animation: sms-float 6s ease-in-out infinite; }
+.sms-drift { animation: sms-drift 14s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .sms-float, .sms-drift { animation: none; } }
+
+/* Hero ad banner: moves right to left, loops seamlessly (list is rendered twice) */
+@keyframes hero-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.hero-marquee { animation: hero-marquee 30s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .hero-marquee { animation-duration: 120s !important; } }

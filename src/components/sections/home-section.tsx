@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { HeroAdBanner } from "@/components/sections/hero-ad-banner";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useLiteMode } from "@/lib/perf";
 import { ArrowRight, ArrowUpRight, BedDouble, Building2, Users, ShieldCheck, Search, KeyRound, ChevronDown } from "lucide-react";
@@ -98,6 +99,7 @@ export function HomeSection({
           src={heroVideoUrl}
         />
         <div className="absolute inset-0 bg-ink-fade" />
+        <HeroAdBanner />
         <motion.div style={lite ? undefined : { y: contentY, opacity: contentOpacity }}
           className="container relative z-10 flex h-full flex-col justify-end pb-20 sm:pb-24 text-ink-foreground">
           <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-semibold leading-[1.08] max-w-4xl">

@@ -54,6 +54,8 @@ import { getFromLocalStorage, saveToLocalStorage } from '@/lib/storage';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ThemeCustomizer, DemoDataCard } from '@/components/admin/theme-customizer';
 import { UserProfilesTable } from '@/components/admin/user-profiles-table';
+import { VendorsPanel } from '@/components/admin/vendors-panel';
+import { HeroAdsManager } from '@/components/admin/hero-ads-manager';
 import { loadSettings, saveSettings } from '@/lib/app-settings';
 
 // Default credentials sourced from environment variables with safe fallbacks
@@ -1479,6 +1481,7 @@ function AdminDashboard() {
                             <TabsTrigger value="management">Management</TabsTrigger>
                             <TabsTrigger value="staff">Staff</TabsTrigger>
                             {/* 👇 New Purchases Tab 👇 */}
+                            <TabsTrigger value="vendors">Vendors</TabsTrigger>
                             <TabsTrigger value="purchases">Purchases</TabsTrigger>
                             <TabsTrigger value="users">Users</TabsTrigger>
                             <TabsTrigger value="appearance">Appearance</TabsTrigger>
@@ -1665,6 +1668,7 @@ function AdminDashboard() {
                     </TabsContent>
 
                     <TabsContent value="management">
+                        <div className="mb-8"><HeroAdsManager /></div>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             <div className="space-y-8">
                                 <Card>
@@ -1883,6 +1887,16 @@ function AdminDashboard() {
                     </TabsContent>
 
                     {/* 👇 NEW PURCHASES TAB CONTENT 👇 */}
+                    <TabsContent value="vendors">
+                        <VendorsPanel
+                            canCreate
+                            onOpenListing={(id) => {
+                                const hit = properties.find((x: any) => String(x.id) === String(id));
+                                if (hit) handleViewDetails(hit as AnyListing);
+                                else toast({ title: 'Listing not loaded', description: 'Refresh the page and try again.' });
+                            }}
+                        />
+                    </TabsContent>
                     <TabsContent value="purchases">
                         <Card>
                             <CardHeader>

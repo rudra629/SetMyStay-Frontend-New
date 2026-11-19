@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 // Public address of the site, used for link previews. Set VITE_SITE_URL on Vercel when a custom domain is added.
 const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") || "https://set-my-stay-frontend-new.vercel.app";
 
-const URL_PAGES: Page[] = ['pg', 'rentals', 'roommates', 'my-properties', 'liked-properties'];
+const URL_PAGES: Page[] = ['pg', 'rentals', 'roommates', 'for-sale', 'my-properties', 'liked-properties'];
 function pageFromUrl(): Page {
   if (typeof window === 'undefined') return 'home';
   const p = new URLSearchParams(window.location.search).get('page') as Page | null;
@@ -52,6 +52,7 @@ import { ListingsSection } from "@/components/sections/listings-section";
 
 import { PropertyDetails } from "@/components/modals/property-details";
 import { RoommateDetails } from "@/components/modals/roommate-details";
+import { ForSaleSection } from "@/components/sections/for-sale-section";
 import { UnlockDetailsModal, PENDING_PURCHASE_KEY } from "@/components/modals/unlock-details-modal";
 import { ListPropertyPaymentModal } from "@/components/modals/list-property-payment-modal";
 import { feeFor, fetchAndCachePricing } from "@/lib/app-settings";
@@ -985,6 +986,7 @@ function Home() {
             isLoadingData={isLoading}
           />
         )}
+        {activePage === 'for-sale' && <ForSaleSection />}
         {isLoading && (['pg', 'rentals', 'roommates', 'my-properties', 'liked-properties'].includes(activePage)) && (
           <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-muted-foreground">
             <LoadingSpinner className="h-10 w-10 text-primary" />

@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { PropertyCard } from "@/components/shared/property-card";
 import { RoommateCard } from "@/components/shared/roommate-card";
+import { RoommateBackdrop } from "@/components/shared/roommate-backdrop";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AutocompleteInput } from '@/components/shared/autocomplete-input';
 import { SearchableSelect } from '@/components/shared/searchable-select';
@@ -467,7 +468,10 @@ export function ListingsSection({
             </div>
                       </div>
           {type === 'roommate' && filteredListings.length > 0 && (
-            <SwipeDeck items={filteredListings} likedItemIds={likedItemIds} onToggleLike={onToggleLike} onViewDetails={(i, t) => onViewDetails(i, t)} className="py-6" />
+            <div className="relative lg:py-6">
+              <RoommateBackdrop />
+              <SwipeDeck items={filteredListings} likedItemIds={likedItemIds} onToggleLike={onToggleLike} onViewDetails={(i, t) => onViewDetails(i, t)} className="relative py-6" />
+            </div>
           )}
           <div className={cn(
             "grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3", type === 'roommate' && "hidden"

@@ -28,6 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/icons';
 import { format } from 'date-fns';
 import { UserProfilesTable } from '@/components/admin/user-profiles-table';
+import { VendorsPanel } from '@/components/admin/vendors-panel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Listing, RoommateProfile, AnyListing } from '@/lib/types';
 import { isVideoUrl, whatsappLink, listingCode, matchesListingCode } from '@/lib/utils';
@@ -272,6 +273,7 @@ function StaffDashboard() {
                             <TabsTrigger value="pending">Pending</TabsTrigger>
                             <TabsTrigger value="approved">Approved</TabsTrigger>
                             <TabsTrigger value="rejected">Rejected</TabsTrigger>
+                            <TabsTrigger value="vendors">Vendors</TabsTrigger>
                             <TabsTrigger value="users">Users</TabsTrigger>
                         </TabsList>
                     </div>
@@ -284,6 +286,14 @@ function StaffDashboard() {
                     </TabsContent>
                     <TabsContent value="rejected">
                         {renderListingsTable('rejected')}
+                    </TabsContent>
+                    <TabsContent value="vendors">
+                        <VendorsPanel
+                            onOpenListing={(id) => {
+                                const hit = properties.find((x: any) => String(x.id) === String(id));
+                                if (hit) handleViewDetails(hit as AnyListing);
+                            }}
+                        />
                     </TabsContent>
                     <TabsContent value="users">
                         <UserProfilesTable />
